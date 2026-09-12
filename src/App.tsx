@@ -64,11 +64,11 @@ export const App: React.FC = () => {
 
       {/* Main UI Layout */}
       <div className="main-content-layer flex min-h-screen">
-        {/* Navigation Sidebar */}
+        {/* Navigation Sidebar Drawer */}
         <Sidebar />
 
-        {/* Main Content Area - Dynamically offset when sidebar is expanded on desktop */}
-        <div className={`flex-1 flex flex-col min-w-0 w-full transition-all duration-300 ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-0'}`}>
+        {/* Main Content Workspace - Full width with Navbar as an icon in top Header */}
+        <div className="flex-1 flex flex-col min-w-0 w-full transition-all duration-300">
           <Header />
 
           <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">

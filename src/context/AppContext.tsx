@@ -148,7 +148,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [whatIfScenario, setWhatIfScenario] = useState<WhatIfScenario>(defaultWhatIf);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [analysisStepIndex, setAnalysisStepIndex] = useState<number>(0);
-  const [sidebarOpen, setSidebarOpen] = useState<boolean>(true);
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
 
   const toggleSidebar = () => setSidebarOpen(prev => !prev);
   const setSidebarCollapsed = (collapsed: boolean) => setSidebarOpen(!collapsed);

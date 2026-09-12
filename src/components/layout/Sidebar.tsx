@@ -56,24 +56,22 @@ export const Sidebar: React.FC = () => {
   const handleNav = (item: NavItem) => {
     setActiveTab(item.id);
     setActivePipelineStage(item.stage);
-    if (window.innerWidth < 1024) {
-      setSidebarOpen(false);
-    }
+    setSidebarOpen(false);
   };
 
   return (
     <>
-      {/* Mobile Drawer Backdrop */}
+      {/* Drawer Backdrop */}
       {sidebarOpen && (
         <div 
-          className="fixed inset-0 bg-slate-900/40 z-40 lg:hidden backdrop-blur-sm"
+          className="fixed inset-0 bg-slate-900/40 z-40 backdrop-blur-sm transition-opacity duration-300"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       <aside className={`
-        fixed top-0 bottom-0 left-0 z-40
-        w-64 bg-white/65 backdrop-blur-2xl border-r border-white/70 shadow-2xl
+        fixed top-0 bottom-0 left-0 z-50
+        w-72 bg-white/90 backdrop-blur-2xl border-r border-white/80 shadow-2xl
         flex flex-col justify-between transition-transform duration-300 ease-in-out
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
       `}>
@@ -98,8 +96,9 @@ export const Sidebar: React.FC = () => {
             </div>
             <button
               type="button"
-              className="lg:hidden p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white/60"
+              className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white/60"
               onClick={() => setSidebarOpen(false)}
+              title="Close Navbar"
             >
               <X className="w-5 h-5" />
             </button>
