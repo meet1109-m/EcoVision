@@ -61,9 +61,9 @@ export const LoginPage: React.FC = () => {
       return;
     }
 
-    // 3. Explicit Demo Account Shortcut Path (when explicitly using DEMO001/DEMO002)
+    // Explicit Demo Account Shortcut Path
     const normalized = trimmedEmail.toUpperCase();
-    if (normalized === 'DEMO001' || normalized === 'DEMO002') {
+    if (normalized === 'DEMO001' || normalized === 'DEMO002' || normalized === 'DEMO003') {
       login(normalized);
       return;
     }
@@ -79,12 +79,28 @@ export const LoginPage: React.FC = () => {
       });
 
       if (res.ok) {
-        // 1. Successful /auth/login response: store token and log in
+        // 1. Successful /auth/login response: store token and log in with user profile
         const data = await res.json();
         if (data.access_token) {
           localStorage.setItem('ecovision_token', data.access_token);
         }
-        login(trimmedEmail);
+        const userObj = data.user;
+        const roleDisplayMap: Record<string, string> = {
+          senior_plant_engineer: 'Senior Plant Engineer',
+          chief_sustainability_officer: 'Chief Sustainability Officer',
+          plant_technical_director: 'Plant Technical Director',
+          process_auditor: 'Process Auditor',
+          operator: 'Plant Operator',
+          admin: 'System Administrator',
+        };
+        const formattedRole = userObj?.role ? (roleDisplayMap[userObj.role] || userObj.role) : undefined;
+        login(trimmedEmail, {
+          id: userObj?.id ? String(userObj.id) : undefined,
+          name: userObj?.full_name || trimmedEmail,
+          email: userObj?.email || trimmedEmail,
+          role: formattedRole,
+          plantName: userObj?.plant_id
+        });
         return;
       } else {
         // 2. 401 or non-OK response with invalid credentials: show error and DO NOT log in
@@ -105,7 +121,9 @@ export const LoginPage: React.FC = () => {
       // 4. Genuine network error / offline backend fallback with visible notice
       setSuccessMsg('Offline Mode Notice: Backend server unreachable. Accessing workspace in local demonstration mode...');
       setTimeout(() => {
-        login(trimmedEmail);
+        login(trimmedEmail, {
+          email: trimmedEmail,
+        });
       }, 1000);
     }
   };
@@ -117,8 +135,9 @@ export const LoginPage: React.FC = () => {
     setSuccessMsg(null);
 
     const trimmedEmail = email.trim();
+    const cleanName = fullName.trim();
 
-    if (!fullName.trim()) {
+    if (!cleanName) {
       setErrorMsg('Please enter your full name.');
       return;
     }
@@ -140,7 +159,7 @@ export const LoginPage: React.FC = () => {
         body: JSON.stringify({
           email: trimmedEmail,
           password,
-          full_name: fullName.trim(),
+          full_name: cleanName,
           role: role.toLowerCase().replace(/\s+/g, '_'),
           plant_id: plantName ? plantName.toUpperCase().slice(0, 8) : 'PLANT-CUSTOM',
         }),
@@ -153,7 +172,12 @@ export const LoginPage: React.FC = () => {
         }
         setSuccessMsg('Account created successfully! Accessing workspace...');
         setTimeout(() => {
-          login(trimmedEmail);
+          login(trimmedEmail, {
+            name: cleanName,
+            email: trimmedEmail,
+            role: role,
+            plantName: plantName || 'Custom Industrial Facility'
+          });
         }, 800);
         return;
       } else {
@@ -174,22 +198,50 @@ export const LoginPage: React.FC = () => {
       // Offline fallback with visible notice
       setSuccessMsg('Offline Mode Notice: Backend server unreachable. Registering user in local mode...');
       setTimeout(() => {
-        login(trimmedEmail);
+        login(trimmedEmail, {
+          name: cleanName,
+          email: trimmedEmail,
+          role: role,
+          plantName: plantName || 'Custom Industrial Facility'
+        });
       }, 1000);
     }
   };
 
   // Quick Demo Account Selection from Popup Box
-  const handleSelectDemo = (demoId: 'DEMO001' | 'DEMO002') => {
+  const handleSelectDemo = (demoId: 'DEMO001' | 'DEMO002' | 'DEMO003') => {
     setIsDemoPopupOpen(false);
     if (demoId === 'DEMO001') {
       setEmail('DEMO001');
       setPassword('EcoLeak@123');
-    } else {
+      login('DEMO001', {
+        id: 'DEMO001',
+        name: 'Dr. Rajesh Sharma',
+        role: 'Chief Sustainability Officer',
+        email: 'rajesh.sharma@greentech.com',
+        plantName: 'GreenTech Chemicals Plant Alpha'
+      });
+    } else if (demoId === 'DEMO002') {
       setEmail('DEMO002');
       setPassword('EcoLeak@456');
+      login('DEMO002', {
+        id: 'DEMO002',
+        name: 'Ananya Patel',
+        role: 'Lead Process & Decarbonization Engineer',
+        email: 'ananya.patel@futurechem.com',
+        plantName: 'FutureChem Industries - Unit 4'
+      });
+    } else {
+      setEmail('DEMO003');
+      setPassword('EcoLeak@789');
+      login('DEMO003', {
+        id: 'DEMO003',
+        name: 'Vikram Singhania',
+        role: 'Plant Technical Director',
+        email: 'vikram.singhania@apexcement.com',
+        plantName: 'Apex Low-Carbon Cement Works'
+      });
     }
-    login(demoId);
   };
 
   // =========================================================================
@@ -360,19 +412,19 @@ export const LoginPage: React.FC = () => {
         </button>
       </header>
 
-      {/* Center Acrylic Authentication Card */}
+      {/* Center Authentication Card */}
       <main className="relative z-10 flex-1 flex items-center justify-center p-4 sm:p-8">
         <div className="w-full max-w-md">
-          <div className="acrylic-card rounded-3xl p-6 sm:p-8 border border-white/20 shadow-2xl backdrop-blur-xl bg-slate-900/80 text-white">
+          <div className="rounded-3xl p-6 sm:p-8 border border-slate-700/80 shadow-2xl shadow-black/60 backdrop-blur-2xl bg-slate-900/95 text-white ring-1 ring-white/10">
             {/* Tab Toggle: Sign In vs Sign Up */}
-            <div className="flex items-center justify-between p-1 bg-slate-950/60 rounded-xl mb-6 border border-slate-800">
+            <div className="flex items-center justify-between p-1 bg-slate-950/80 rounded-2xl mb-6 border border-slate-800 gap-1">
               <button
                 type="button"
                 onClick={() => { setAuthMode('login'); setErrorMsg(null); }}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                className={`flex-1 py-2.5 px-3 text-xs font-bold rounded-xl transition-all ${
                   authMode === 'login'
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/25'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60 font-medium'
                 }`}
               >
                 Sign In
@@ -380,10 +432,10 @@ export const LoginPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => { setAuthMode('signup'); setErrorMsg(null); }}
-                className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${
+                className={`flex-1 py-2.5 px-3 text-xs font-bold rounded-xl transition-all ${
                   authMode === 'signup'
-                    ? 'bg-emerald-600 text-white shadow-sm'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/25'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-800/60 font-medium'
                 }`}
               >
                 Create Account (Sign Up)
@@ -408,11 +460,11 @@ export const LoginPage: React.FC = () => {
             {authMode === 'login' && (
               <form onSubmit={handleLoginSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label className="block text-xs font-bold text-slate-200 mb-1.5 uppercase tracking-wider">
                     Customer ID or Work Email
                   </label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-emerald-400/80">
                       <Mail className="w-4 h-4" />
                     </span>
                     <input
@@ -420,17 +472,17 @@ export const LoginPage: React.FC = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="DEMO001 or engineer@plant.com"
-                      className="w-full pl-9 pr-3 py-2.5 bg-slate-950/70 border border-slate-700/80 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+                      className="w-full pl-10 pr-3.5 py-3 bg-slate-950/90 border border-slate-700/90 hover:border-slate-500 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/25 rounded-xl text-xs text-white placeholder:text-slate-400 focus:outline-none font-medium transition-all"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                  <label className="block text-xs font-bold text-slate-200 mb-1.5 uppercase tracking-wider">
                     Password
                   </label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-emerald-400/80">
                       <Lock className="w-4 h-4" />
                     </span>
                     <input
@@ -438,28 +490,31 @@ export const LoginPage: React.FC = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••••••"
-                      className="w-full pl-9 pr-3 py-2.5 bg-slate-950/70 border border-slate-700/80 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 font-medium"
+                      className="w-full pl-10 pr-3.5 py-3 bg-slate-950/90 border border-slate-700/90 hover:border-slate-500 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/25 rounded-xl text-xs text-white placeholder:text-slate-400 focus:outline-none font-medium transition-all"
                     />
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-xs text-slate-400">
-                  <label className="flex items-center gap-2 cursor-pointer">
+                <div className="flex items-center justify-between text-xs pt-1">
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input
                       type="checkbox"
                       checked={rememberMe}
                       onChange={(e) => setRememberMe(e.target.checked)}
-                      className="w-3.5 h-3.5 rounded text-emerald-500 focus:ring-emerald-500 bg-slate-800 border-slate-700"
+                      className="w-4 h-4 rounded text-emerald-500 focus:ring-emerald-500/40 bg-slate-950 border-slate-600 cursor-pointer"
                     />
-                    <span>Remember session</span>
+                    <span className="text-xs font-semibold text-slate-200">Remember session</span>
                   </label>
-                  <span className="text-[11px] text-emerald-400">Secured via SHA-256</span>
+                  <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    <span>Secured via SHA-256</span>
+                  </span>
                 </div>
 
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl text-xs font-bold tracking-wide shadow-lg shadow-emerald-600/25 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:via-teal-400 hover:to-emerald-500 text-white rounded-xl text-xs font-extrabold tracking-wider uppercase shadow-lg shadow-emerald-600/30 transition-all transform hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   <span>{isLoading ? 'Verifying Credentials...' : 'SIGN IN TO WORKSPACE'}</span>
                   <ArrowRight className="w-4 h-4" />
@@ -471,11 +526,11 @@ export const LoginPage: React.FC = () => {
             {authMode === 'signup' && (
               <form onSubmit={handleSignUpSubmit} className="space-y-3.5">
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-slate-200 mb-1 uppercase tracking-wider">
                     Full Name
                   </label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-emerald-400/80">
                       <User className="w-4 h-4" />
                     </span>
                     <input
@@ -483,17 +538,17 @@ export const LoginPage: React.FC = () => {
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
                       placeholder="Dr. Rajesh Sharma"
-                      className="w-full pl-9 pr-3 py-2 bg-slate-950/70 border border-slate-700/80 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full pl-10 pr-3.5 py-2.5 bg-slate-950/90 border border-slate-700/90 hover:border-slate-500 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/25 rounded-xl text-xs text-white placeholder:text-slate-400 focus:outline-none"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-slate-200 mb-1 uppercase tracking-wider">
                     Work Email Address
                   </label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-emerald-400/80">
                       <Mail className="w-4 h-4" />
                     </span>
                     <input
@@ -501,14 +556,14 @@ export const LoginPage: React.FC = () => {
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       placeholder="engineer@plant.com"
-                      className="w-full pl-9 pr-3 py-2 bg-slate-950/70 border border-slate-700/80 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full pl-10 pr-3.5 py-2.5 bg-slate-950/90 border border-slate-700/90 hover:border-slate-500 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/25 rounded-xl text-xs text-white placeholder:text-slate-400 focus:outline-none"
                     />
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    <label className="block text-xs font-bold text-slate-200 mb-1 uppercase tracking-wider">
                       Plant Facility Name
                     </label>
                     <input
@@ -516,33 +571,33 @@ export const LoginPage: React.FC = () => {
                       value={plantName}
                       onChange={(e) => setPlantName(e.target.value)}
                       placeholder="Bhiwadi Petrochem"
-                      className="w-full px-3 py-2 bg-slate-950/70 border border-slate-700/80 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full px-3 py-2.5 bg-slate-950/90 border border-slate-700/90 hover:border-slate-500 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/25 rounded-xl text-xs text-white placeholder:text-slate-400 focus:outline-none"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    <label className="block text-xs font-bold text-slate-200 mb-1 uppercase tracking-wider">
                       Professional Role
                     </label>
                     <select
                       value={role}
                       onChange={(e) => setRole(e.target.value)}
-                      className="w-full px-2.5 py-2 bg-slate-950/70 border border-slate-700/80 rounded-xl text-xs text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full px-2.5 py-2.5 bg-slate-950/90 border border-slate-700/90 hover:border-slate-500 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/25 rounded-xl text-xs text-white focus:outline-none"
                     >
-                      <option value="Senior Plant Engineer">Plant Engineer</option>
-                      <option value="Chief Sustainability Officer">Sustainability CSO</option>
-                      <option value="Plant Technical Director">Technical Director</option>
-                      <option value="Process Auditor">Process Auditor</option>
+                      <option value="Senior Plant Engineer" className="bg-slate-900 text-white">Plant Engineer</option>
+                      <option value="Chief Sustainability Officer" className="bg-slate-900 text-white">Sustainability CSO</option>
+                      <option value="Plant Technical Director" className="bg-slate-900 text-white">Technical Director</option>
+                      <option value="Process Auditor" className="bg-slate-900 text-white">Process Auditor</option>
                     </select>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  <label className="block text-xs font-bold text-slate-200 mb-1 uppercase tracking-wider">
                     Create Password
                   </label>
                   <div className="relative">
-                    <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-emerald-400/80">
                       <Lock className="w-4 h-4" />
                     </span>
                     <input
@@ -550,7 +605,7 @@ export const LoginPage: React.FC = () => {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="Minimum 6 characters"
-                      className="w-full pl-9 pr-3 py-2 bg-slate-950/70 border border-slate-700/80 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                      className="w-full pl-10 pr-3.5 py-2.5 bg-slate-950/90 border border-slate-700/90 hover:border-slate-500 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/25 rounded-xl text-xs text-white placeholder:text-slate-400 focus:outline-none"
                     />
                   </div>
                 </div>
@@ -558,7 +613,7 @@ export const LoginPage: React.FC = () => {
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl text-xs font-bold tracking-wide shadow-lg shadow-emerald-600/25 transition-all disabled:opacity-50"
+                  className="w-full py-3 px-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:via-teal-400 hover:to-emerald-500 text-white rounded-xl text-xs font-extrabold tracking-wider uppercase shadow-lg shadow-emerald-600/30 transition-all disabled:opacity-50 mt-2"
                 >
                   <span>{isLoading ? 'Creating Account...' : 'REGISTER & ACCESS ECOVISION'}</span>
                 </button>
@@ -566,11 +621,11 @@ export const LoginPage: React.FC = () => {
             )}
 
             {/* REQUIRED DEMO POPUP TRIGGER BUTTON */}
-            <div className="mt-6 pt-4 border-t border-slate-800">
+            <div className="mt-6 pt-5 border-t border-slate-800">
               <button
                 type="button"
                 onClick={() => setIsDemoPopupOpen(true)}
-                className="w-full py-2.5 px-4 rounded-xl bg-white/10 hover:bg-white/15 text-emerald-300 hover:text-emerald-200 border border-emerald-500/30 text-xs font-bold transition-all flex items-center justify-center gap-2"
+                className="w-full py-3 px-4 rounded-xl bg-slate-950 hover:bg-slate-800 text-emerald-300 hover:text-emerald-100 border border-emerald-500/50 hover:border-emerald-400 text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-emerald-950/40 active:scale-[0.99]"
               >
                 <KeyRound className="w-4 h-4 text-emerald-400" />
                 <span>Open 1-Click Fast Demo Accounts</span>
@@ -581,7 +636,7 @@ export const LoginPage: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 px-6 py-4 text-center text-xs text-slate-400 border-t border-slate-800/80 bg-slate-950/40">
+      <footer className="relative z-10 px-6 py-4 text-center text-xs text-slate-300 border-t border-slate-800/80 bg-slate-950/60 backdrop-blur-md">
         EcoVision Industrial Emission Intelligence & Cost Analysis • All Rights Reserved
       </footer>
 
@@ -589,18 +644,18 @@ export const LoginPage: React.FC = () => {
       {/* REQUIRED POPUP BOX: FAST DEMO PROFILES MODAL DIALOG                       */}
       {/* ========================================================================= */}
       {isDemoPopupOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in">
-          <div className="w-full max-w-lg acrylic-card rounded-3xl p-6 border border-white/20 bg-slate-900/95 text-white shadow-2xl relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-in fade-in">
+          <div className="w-full max-w-lg rounded-3xl p-6 sm:p-7 border border-slate-700 bg-slate-900/98 text-white shadow-2xl shadow-black/80 backdrop-blur-2xl relative ring-1 ring-white/10">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800 mb-4">
               <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
                   <KeyRound className="w-4 h-4" />
                 </div>
                 <div>
                   <h3 className="font-extrabold text-base text-white">
                     Select Benchmark Demo Account
                   </h3>
-                  <p className="text-[11px] text-slate-400">
+                  <p className="text-xs text-slate-300 font-medium mt-0.5">
                     Includes pre-loaded factory telemetry, sensor feeds & AI circular recommendations.
                   </p>
                 </div>
@@ -609,7 +664,7 @@ export const LoginPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setIsDemoPopupOpen(false)}
-                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800"
+                className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -619,23 +674,23 @@ export const LoginPage: React.FC = () => {
               {/* Demo Account 1 */}
               <div 
                 onClick={() => handleSelectDemo('DEMO001')}
-                className="p-4 rounded-2xl bg-slate-950/80 border border-slate-700/80 hover:border-emerald-500/80 hover:bg-emerald-950/30 cursor-pointer transition-all group"
+                className="p-4 rounded-2xl bg-slate-950 border border-slate-700/80 hover:border-emerald-400 hover:bg-slate-800/80 cursor-pointer transition-all group shadow-md"
               >
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-xs font-bold text-emerald-400 group-hover:text-emerald-300">
                     Demo Account #1: Petrochemical & Polymers
                   </span>
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                  <span className="text-[11px] font-mono font-extrabold px-2.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
                     DEMO001
                   </span>
                 </div>
                 <div className="font-bold text-sm text-white">GreenTech Chemicals Plant Alpha</div>
-                <div className="text-xs text-slate-300 mt-0.5">Bhiwadi Industrial Zone, Rajasthan</div>
-                <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                <div className="text-xs text-slate-300 mt-0.5 font-medium">Bhiwadi Industrial Zone, Rajasthan</div>
+                <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-300">
                   <span>Lead: Dr. Rajesh Sharma (CSO)</span>
                   <span className="font-bold text-emerald-400 group-hover:translate-x-1 transition-transform flex items-center gap-1">
                     <span>Launch Profile</span>
-                    <ArrowRight className="w-3 h-3" />
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </span>
                 </div>
               </div>
@@ -643,31 +698,55 @@ export const LoginPage: React.FC = () => {
               {/* Demo Account 2 */}
               <div 
                 onClick={() => handleSelectDemo('DEMO002')}
-                className="p-4 rounded-2xl bg-slate-950/80 border border-slate-700/80 hover:border-sky-500/80 hover:bg-sky-950/30 cursor-pointer transition-all group"
+                className="p-4 rounded-2xl bg-slate-950 border border-slate-700/80 hover:border-sky-400 hover:bg-slate-800/80 cursor-pointer transition-all group shadow-md"
               >
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-xs font-bold text-sky-400 group-hover:text-sky-300">
                     Demo Account #2: Catalytic Refining & Solvent
                   </span>
-                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-sky-500/20 text-sky-300 border border-sky-500/30">
+                  <span className="text-[11px] font-mono font-extrabold px-2.5 py-0.5 rounded-md bg-sky-500/20 text-sky-300 border border-sky-500/40">
                     DEMO002
                   </span>
                 </div>
                 <div className="font-bold text-sm text-white">FutureChem Industries - Unit 4</div>
-                <div className="text-xs text-slate-300 mt-0.5">Dahej Petrochemical Corridor, Gujarat</div>
-                <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+                <div className="text-xs text-slate-300 mt-0.5 font-medium">Dahej Petrochemical Corridor, Gujarat</div>
+                <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-300">
                   <span>Lead: Ananya Patel (Decarbonization Lead)</span>
                   <span className="font-bold text-sky-400 group-hover:translate-x-1 transition-transform flex items-center gap-1">
                     <span>Launch Profile</span>
-                    <ArrowRight className="w-3 h-3" />
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </span>
+                </div>
+              </div>
+
+              {/* Demo Account 3 */}
+              <div 
+                onClick={() => handleSelectDemo('DEMO003')}
+                className="p-4 rounded-2xl bg-slate-950 border border-slate-700/80 hover:border-amber-400 hover:bg-slate-800/80 cursor-pointer transition-all group shadow-md"
+              >
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-xs font-bold text-amber-400 group-hover:text-amber-300">
+                    Demo Account #3: Heavy Manufacturing & Kiln
+                  </span>
+                  <span className="text-[11px] font-mono font-extrabold px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-300 border border-amber-500/40">
+                    DEMO003
+                  </span>
+                </div>
+                <div className="font-bold text-sm text-white">Apex Low-Carbon Cement Works</div>
+                <div className="text-xs text-slate-300 mt-0.5 font-medium">Satna Industrial Belt, Madhya Pradesh</div>
+                <div className="mt-2.5 pt-2 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-300">
+                  <span>Lead: Vikram Singhania (Plant Technical Director)</span>
+                  <span className="font-bold text-amber-400 group-hover:translate-x-1 transition-transform flex items-center gap-1">
+                    <span>Launch Profile</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </span>
                 </div>
               </div>
             </div>
 
             <div className="mt-4 pt-3 border-t border-slate-800 text-center">
-              <span className="text-[11px] text-slate-400">
-                Clicking either profile automatically authenticates and opens the interactive dashboard.
+              <span className="text-xs text-slate-300 font-medium">
+                Clicking any profile automatically authenticates and opens the interactive dashboard.
               </span>
             </div>
           </div>
