@@ -59,7 +59,7 @@ export const GlobeVisualization: React.FC = () => {
 
           // 3D Sphere Surface Normal
           float z = sqrt(max(0.0, 1.0 - r * r));
-          vec3 N = vec3(p.x / sphereRadius, -p.y / sphereRadius, z);
+          vec3 N = vec3(p.x / sphereRadius, p.y / sphereRadius, z);
 
           // Apply Axial Tilt (around X axis)
           float cosT = cos(TILT);
