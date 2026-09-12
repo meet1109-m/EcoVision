@@ -1,14 +1,12 @@
-<<<<<<< HEAD
-# ECOLEAK AI — INDUSTRIAL EMISSION INTELLIGENCE
+# EcoVision — Industrial Emission Intelligence & Cost Analysis
 
-> **HackOut’26 Prototype Submission**  
 > **Problem Statement:** *“Industrial Emission Leak-Point Detector & Circular Alternative Recommender”*
 
 ---
 
 ## 🌍 Overview
 
-**EcoLeak AI** is an enterprise-grade industrial decision-support SaaS platform designed to transform fragmented factory process, energy, material, waste, and continuous emission monitoring (CEMS) data into actionable decarbonization decisions.
+**EcoVision** is an enterprise-grade industrial decision-support SaaS platform designed to transform fragmented factory process, energy, material, waste, and continuous emission monitoring (CEMS) data into actionable decarbonization decisions.
 
 ### The 7-Stage Core Workflow:
 $$\text{MEASURE} \longrightarrow \text{DETECT} \longrightarrow \text{LOCALIZE} \longrightarrow \text{EXPLAIN} \longrightarrow \text{RECOMMEND} \longrightarrow \text{SIMULATE} \longrightarrow \text{ACT}$$
@@ -26,7 +24,7 @@ $$\text{MEASURE} \longrightarrow \text{DETECT} \longrightarrow \text{LOCALIZE} \
 ## 📁 Complete Project Structure
 
 ```
-ecoleak-ai/
+ecovision/
 ├── public/
 │   ├── factory_bg.jpg              # High-res desaturated industrial factory smoke backdrop
 │   └── logo.svg                    # Brand vector logo
@@ -93,6 +91,11 @@ npm run build
 - **Background**: `#F5F7FA` (Light Industrial Slate)
 - **Cards**: `#FFFFFF` / Frosted Acrylic (`backdrop-filter: blur(14px)`, `border: #E2E8F0`)
 - **Typography**: Inter & JetBrains Mono (Primary text: `#0F172A`, Secondary text: `#64748B`)
+- **Accents**:
+  - Electric Blue (`#0284C7`): AI and primary actions
+  - Emerald Green (`#059669`): Sustainability and verified actions
+  - Amber (`#D97706`): Warning alerts
+  - Crimson Red (`#DC2626`): Critical emission risks*Typography**: Inter & JetBrains Mono (Primary text: `#0F172A`, Secondary text: `#64748B`)
 - **Accents**:
   - Electric Blue (`#0284C7`): AI and primary actions
   - Emerald Green (`#059669`): Sustainability and verified actions

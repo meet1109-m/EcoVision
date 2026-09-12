@@ -647,9 +647,8 @@ export const LoginPage: React.FC = () => {
                 </div>
 
                 <div>
-<<<<<<< HEAD
                   <div className="flex items-center justify-between mb-1">
-                    <label className="block text-xs font-semibold text-slate-300">
+                    <label className="block text-xs font-bold text-slate-200 uppercase tracking-wider">
                       Create Password
                     </label>
                     {password && (
@@ -658,11 +657,6 @@ export const LoginPage: React.FC = () => {
                       </span>
                     )}
                   </div>
-=======
-                  <label className="block text-xs font-bold text-slate-200 mb-1 uppercase tracking-wider">
-                    Create Password
-                  </label>
->>>>>>> 22e364e0b30fea55c0a6372dd12f256d67f2bc00
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-emerald-400/80">
                       <Lock className="w-4 h-4" />
@@ -671,13 +665,8 @@ export const LoginPage: React.FC = () => {
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-<<<<<<< HEAD
                       placeholder="Req. 8+ chars, 1 number, 1 special char"
-                      className="w-full pl-9 pr-3 py-2 bg-slate-950/70 border border-slate-700/80 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-=======
-                      placeholder="Minimum 6 characters"
                       className="w-full pl-10 pr-3.5 py-2.5 bg-slate-950/90 border border-slate-700/90 hover:border-slate-500 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/25 rounded-xl text-xs text-white placeholder:text-slate-400 focus:outline-none"
->>>>>>> 22e364e0b30fea55c0a6372dd12f256d67f2bc00
                     />
                   </div>
 
@@ -709,17 +698,12 @@ export const LoginPage: React.FC = () => {
 
                 <button
                   type="submit"
-<<<<<<< HEAD
                   disabled={isLoading || !isPasswordStrong}
-                  className={`w-full py-2.5 px-4 text-white rounded-xl text-xs font-bold tracking-wide shadow-lg transition-all flex items-center justify-center gap-2 ${
+                  className={`w-full py-3 px-4 text-white rounded-xl text-xs font-extrabold tracking-wider uppercase shadow-lg transition-all flex items-center justify-center gap-2 mt-2 ${
                     isPasswordStrong
-                      ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 shadow-emerald-600/25 active:scale-[0.98]'
+                      ? 'bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:via-teal-400 hover:to-emerald-500 shadow-emerald-600/30 active:scale-[0.98]'
                       : 'bg-slate-800 text-slate-400 border border-slate-700/60 opacity-60 cursor-not-allowed shadow-none'
                   }`}
-=======
-                  disabled={isLoading}
-                  className="w-full py-3 px-4 bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:via-teal-400 hover:to-emerald-500 text-white rounded-xl text-xs font-extrabold tracking-wider uppercase shadow-lg shadow-emerald-600/30 transition-all disabled:opacity-50 mt-2"
->>>>>>> 22e364e0b30fea55c0a6372dd12f256d67f2bc00
                 >
                   <span>{isLoading ? 'Creating Account...' : 'REGISTER & ACCESS ECOVISION'}</span>
                   {isPasswordStrong && <ArrowRight className="w-4 h-4" />}
