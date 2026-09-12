@@ -203,3 +203,138 @@ export async function fetchBackendReadings(plantId: string = 'PLANT-A', size: nu
     return null;
   }
 }
+
+export interface PlantSummary {
+  plant_id: string;
+  name: string;
+  total_equipment: number;
+  active_hotspots: number;
+  open_incidents: number;
+  avg_risk_score: number;
+  avg_co2_ppm: number;
+  total_actions_pending: number;
+}
+
+export interface EmissionsSummary {
+  status: string;
+  plant_id: string;
+  total_readings: number;
+  avg_co2_ppm: number;
+  avg_ch4_ppm: number;
+  avg_voc_ppm: number;
+  avg_pm25_mg_m3: number;
+  avg_risk_score: number;
+  incident_count: number;
+  incident_rate_pct: number;
+  critical_leak_count: number;
+  total_co2e_tonnes: number;
+}
+
+export interface RecommendationItem {
+  id: string;
+  plant_id?: string | null;
+  equipment_id?: string | null;
+  title: string;
+  description: string;
+  co2Reduction: number;
+  costReduction: number;
+  environmental: number;
+  economic: number;
+  circularity: number;
+  feasibility: number;
+  isAIRecommended: boolean;
+  status: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface ActionItem {
+  id: string;
+  plant_id?: string | null;
+  equipment_id?: string | null;
+  recommendation_id?: string | null;
+  title: string;
+  priority: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+  impact: number;
+  estimatedCost: number;
+  feasibility: number;
+  status: 'PENDING' | 'PLANNED' | 'IN_PROGRESS' | 'COMPLETED';
+  description: string;
+  assigned_to_user_id?: number | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/**
+ * Fetch plant summary metrics from FastAPI /api/v1/plants/{plant_id}/summary.
+ */
+export async function fetchPlantSummary(plantId: string = 'PLANT-A'): Promise<PlantSummary | null> {
+  try {
+    const res = await fetch(`/api/v1/plants/${encodeURIComponent(plantId)}/summary`, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fetch aggregate emission metrics from FastAPI /api/v1/emissions/summary.
+ */
+export async function fetchEmissionsSummary(plantId?: string): Promise<EmissionsSummary | null> {
+  try {
+    const url = plantId 
+      ? `/api/v1/emissions/summary?plant_id=${encodeURIComponent(plantId)}`
+      : '/api/v1/emissions/summary';
+    const res = await fetch(url, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fetch decarbonization recommendations from FastAPI /api/v1/recommendations.
+ */
+export async function fetchRecommendations(plantId?: string, limit: number = 10): Promise<RecommendationItem[] | null> {
+  try {
+    const params = new URLSearchParams();
+    if (plantId) params.append('plant_id', plantId);
+    params.append('limit', String(limit));
+    const res = await fetch(`/api/v1/recommendations?${params.toString()}`, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Fetch operational actions from FastAPI /api/v1/actions.
+ */
+export async function fetchActions(plantId?: string, limit: number = 20): Promise<ActionItem[] | null> {
+  try {
+    const params = new URLSearchParams();
+    if (plantId) params.append('plant_id', plantId);
+    params.append('limit', String(limit));
+    const res = await fetch(`/api/v1/actions?${params.toString()}`, {
+      method: 'GET',
+      headers: { 'Accept': 'application/json' },
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  }
+}
+
