@@ -77,7 +77,7 @@ export const ImpactReportView: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-slate-200 gap-4">
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-lg font-black tracking-tight text-slate-900 font-mono">ECOLEAK AI</span>
+              <span className="text-lg font-black tracking-tight text-slate-900 font-mono">ECOVISION</span>
               <span className="text-xs font-bold bg-sky-100 text-sky-800 px-2 py-0.5 rounded">
                 SIMULATION REPORT
               </span>
@@ -92,7 +92,7 @@ export const ImpactReportView: React.FC = () => {
 
           <div className="text-right text-xs text-slate-500 space-y-0.5">
             <div>Generated: <strong className="text-slate-800">{new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</strong></div>
-            <div>Model Engine: <span className="font-mono font-bold text-sky-700">EcoLeak-XGBoost-v2.6</span></div>
+            <div>Model Engine: <span className="font-mono font-bold text-sky-700">EcoVision-RF-v2.6</span></div>
             <div className="text-[10px] text-slate-400">* Prototype / Illustrative Simulation Data</div>
           </div>
         </div>
@@ -139,7 +139,7 @@ export const ImpactReportView: React.FC = () => {
             <div className="p-3.5 rounded-xl bg-sky-50/80 border border-sky-200">
               <div className="text-[10px] text-sky-800 font-semibold uppercase">Est. Annual Savings</div>
               <div className="text-lg font-mono font-extrabold text-sky-700 mt-1">
-                ${(simulationResult.potentialCO2eSavedKgDay * 365 * 0.095).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                ₹{Math.round(simulationResult.potentialCO2eSavedKgDay * 365 * 0.095 * 80).toLocaleString('en-IN')}
               </div>
             </div>
 
@@ -231,7 +231,7 @@ export const ImpactReportView: React.FC = () => {
           <div className="flex items-center gap-2">
             <ShieldCheck className="w-5 h-5 text-emerald-600 flex-shrink-0" />
             <span>
-              Validated by EcoLeak AI Multi-Variate Industrial Optimization Engine (HackOut’26 Edition).
+              Validated by EcoVision Multi-Variate Industrial Optimization Engine (HackOut’26 Edition).
             </span>
           </div>
           <div className="font-mono text-slate-400">

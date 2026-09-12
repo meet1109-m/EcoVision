@@ -3,7 +3,12 @@ from sklearn.model_selection import train_test_split
 
 def main():
     import os
-    dataset_dir = "dataset" if os.path.exists("dataset") else "."
+    if os.path.exists(os.path.join("model_data", "industrial_leak_training_50k.csv")):
+        dataset_dir = "model_data"
+    elif os.path.exists("dataset"):
+        dataset_dir = "dataset"
+    else:
+        dataset_dir = "."
     dataset_path = os.path.join(dataset_dir, "industrial_leak_training_50k.csv")
     train_path = os.path.join(dataset_dir, "train_data.csv")
     test_path = os.path.join(dataset_dir, "test_data.csv")

@@ -42,7 +42,7 @@ export const OverviewView: React.FC = () => {
               Decarbonization Decision Center
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 mt-1 max-w-3xl leading-relaxed">
-              Real-time anomaly monitoring for <strong>{factoryProfile.name}</strong>. The EcoLeak neural pipeline has identified critical emission leak points and computed optimized circular interventions.
+              Real-time anomaly monitoring for <strong>{factoryProfile.name}</strong>. The EcoVision neural pipeline has identified critical emission leak points and computed optimized circular interventions.
             </p>
           </div>
 
@@ -195,7 +195,7 @@ export const OverviewView: React.FC = () => {
               <div className="p-2.5 rounded-xl bg-sky-50 border border-sky-200">
                 <div className="text-[10px] font-semibold text-sky-800 uppercase">Annual Savings</div>
                 <div className="text-base font-bold font-mono text-sky-700">
-                  ${simulationResult.recommendedAlternative.annualSavingsUSD.toLocaleString()}
+                  ₹{Math.round(simulationResult.recommendedAlternative.annualSavingsUSD * 80).toLocaleString('en-IN')}
                 </div>
               </div>
             </div>

@@ -16,11 +16,12 @@ import { MultiCriteriaOptimizerView } from './views/MultiCriteriaOptimizerView';
 import { WhatIfSimulatorView } from './views/WhatIfSimulatorView';
 import { ImpactReportView } from './views/ImpactReportView';
 import { ActionCenterView } from './views/ActionCenterView';
+import { CostSavingsCalculatorView } from './views/CostSavingsCalculatorView';
 
 export const App: React.FC = () => {
   const { isAuthenticated, activeTab } = useApp();
 
-  // If not signed in, show the 50/50 Earth & Solid Login Page
+  // If not signed in, show the Landing / Login experience
   if (!isAuthenticated) {
     return <LoginPage />;
   }
@@ -40,6 +41,8 @@ export const App: React.FC = () => {
         return <DigitalTwinHotspotsView />;
       case 'ai-recommendations':
         return <AIRecommendationsView />;
+      case 'cost-savings':
+        return <CostSavingsCalculatorView />;
       case 'optimizer':
         return <MultiCriteriaOptimizerView />;
       case 'what-if':

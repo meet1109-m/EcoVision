@@ -31,7 +31,7 @@ export const AIProcessingModal: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-semibold text-lg tracking-tight flex items-center gap-2">
-                  EcoLeak Neural Engine
+                  EcoVision Neural Engine
                   <Sparkles className="w-4 h-4 text-amber-300" />
                 </h3>
                 <p className="text-xs text-sky-200">Multi-Variate Industrial Anomaly & Decarbonization Pipeline</p>

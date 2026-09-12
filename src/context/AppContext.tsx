@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useMemo, useCallback } from 'react';
+import React, { createContext, useContext, useState, useMemo, useCallback, useEffect } from 'react';
 import { 
   FactoryProfile, 
   NavigationTab, 
@@ -6,10 +6,12 @@ import {
   OptimizerWeights, 
   PriorityPreset, 
   WhatIfScenario, 
-  ActionPlanItem 
+  ActionPlanItem,
+  CircularAlternative 
 } from '../types';
 import { FACTORY_PRESETS } from '../data/presets';
 import { runSimulation, SimulationResult } from '../data/simulationEngine';
+import { predictIncident, PredictResponse, TelemetryInput } from '../services/api';
 
 interface User {
   id: string;
@@ -33,6 +35,9 @@ interface AppContextType {
   isAnalyzing: boolean;
   analysisStepIndex: number;
   sidebarCollapsed: boolean;
+  latestMLPrediction: PredictResponse | null;
+  isMLPredicting: boolean;
+  selectedRecommendationForCalculator: CircularAlternative | null;
   
   // Actions
   login: (customerIdOrEmail?: string) => void;
@@ -48,6 +53,8 @@ interface AppContextType {
   resetWhatIfToDefault: () => void;
   triggerAIAnalysis: () => Promise<void>;
   updateActionStatus: (id: string, status: ActionPlanItem['status']) => void;
+  runLiveMLPrediction: (overrideReading?: Partial<TelemetryInput>) => Promise<PredictResponse | null>;
+  selectRecommendationForCalculator: (alt: CircularAlternative) => void;
 }
 
 const defaultWeights: OptimizerWeights = {
@@ -67,6 +74,63 @@ const defaultWhatIf: WhatIfScenario = {
   sourcingDistanceKm: 180
 };
 
+const profileToTelemetry = (profile: FactoryProfile, whatIf?: WhatIfScenario): TelemetryInput => {
+  const isChemical = profile.industryType === 'Chemicals' || profile.industryType === 'Pharmaceuticals';
+  const processType = isChemical ? 'Refining' : 'Petrochemical';
+  const equip = profile.equipment[0] || 'Continuous Stirred Tank Reactor';
+  const equipType = equip.includes('Reactor') ? 'Reactor' : (equip.includes('Compressor') ? 'Compressor' : (equip.includes('Scrubber') ? 'Scrubber' : 'Furnace'));
+  
+  let pressDev = 12.5;
+  let flowDev = -8.4;
+  let tempDev = 3.2;
+  let vocPpm = 12.5;
+  let co2Ppm = 4800.0;
+  
+  if (whatIf) {
+    const tuningFactor = (100 - whatIf.processConditionTuning) / 100;
+    pressDev = 12.5 * tuningFactor;
+    flowDev = -8.4 * tuningFactor;
+    tempDev = 3.2 * tuningFactor;
+    vocPpm = Math.max(1.0, 12.5 * tuningFactor);
+    const renewableFactor = (100 - whatIf.renewableEnergyPercentage * 0.5) / 100;
+    co2Ppm = Math.max(400.0, 4800.0 * renewableFactor);
+  }
+
+  return {
+    plant_id: profile.id,
+    process_unit_id: 'UNIT-01',
+    equipment_id: profile.equipment[0] ? `${profile.id}-EQ01` : 'EQ-001',
+    equipment_type: equipType,
+    process_type: processType,
+    temperature_c: 185.0,
+    pressure_bar: 14.2,
+    flow_rate: 130.0,
+    production_rate: 80.0,
+    operating_hours: (profile.operatingHoursPerDay || 20) * 365 * 4,
+    equipment_age_years: 12.0,
+    maintenance_due: false,
+    co2_ppm: co2Ppm,
+    co_ppm: 18.5,
+    nox_ppm: 52.0,
+    so2_ppm: 22.0,
+    voc_ppm: vocPpm,
+    ch4_ppm: 3.2,
+    pm25_mg_m3: 14.0,
+    fuel_or_material_type: profile.naturalGasM3Day > 0 ? 'NaturalGas' : 'Naphtha',
+    ambient_temperature_c: 32.0,
+    humidity_pct: 55.0,
+    wind_speed_m_s: 3.2,
+    shift: 'Morning',
+    maintenance_status: 'Normal',
+    pressure_deviation_pct: pressDev,
+    flow_deviation_pct: flowDev,
+    temperature_deviation_pct: tempDev,
+    emission_above_baseline_pct: 28.0,
+    rolling_mean: 14.2,
+    rolling_std: 1.1,
+  };
+};
+
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -83,17 +147,59 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [analysisStepIndex, setAnalysisStepIndex] = useState<number>(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
   const [actionPlanOverrides, setActionPlanOverrides] = useState<Record<string, ActionPlanItem['status']>>({});
+  
+  // Real ML Prediction state
+  const [latestMLPrediction, setLatestMLPrediction] = useState<PredictResponse | null>(null);
+  const [isMLPredicting, setIsMLPredicting] = useState<boolean>(false);
+  const [selectedRecommendationForCalculator, setSelectedRecommendationForCalculator] = useState<CircularAlternative | null>(null);
 
-  // Compute live simulation result based on current factory profile & weights
+  // Compute simulation result, merging in real ML prediction metrics when available
   const simulationResult = useMemo(() => {
     const res = runSimulation(factoryProfile, optimizerWeights);
+    
     // Apply action plan overrides
     res.actionPlan = res.actionPlan.map(act => ({
       ...act,
       status: actionPlanOverrides[act.id] || act.status
     }));
+
+    // If live ML model result is available, seamlessly enrich KPIs with true ML outputs
+    if (latestMLPrediction) {
+      res.emissionRiskScore = Math.round(latestMLPrediction.predicted_risk_score);
+      const riskClassMap: Record<string, 'CRITICAL' | 'HIGH' | 'WARNING' | 'NORMAL'> = {
+        normal: 'NORMAL',
+        warning: 'WARNING',
+        leak_suspected: 'HIGH',
+        critical: 'CRITICAL',
+        confirmed_leak: 'CRITICAL'
+      };
+      res.emissionRiskStatus = riskClassMap[latestMLPrediction.predicted_risk_class] || 'WARNING';
+    }
+
     return res;
-  }, [factoryProfile, optimizerWeights, actionPlanOverrides]);
+  }, [factoryProfile, optimizerWeights, actionPlanOverrides, latestMLPrediction]);
+
+  // Real ML prediction caller
+  const runLiveMLPrediction = useCallback(async (overrideReading?: Partial<TelemetryInput>): Promise<PredictResponse | null> => {
+    setIsMLPredicting(true);
+    try {
+      const baseTelemetry = profileToTelemetry(factoryProfile, whatIfScenario);
+      const mergedTelemetry: TelemetryInput = { ...baseTelemetry, ...(overrideReading || {}) };
+      const res = await predictIncident(mergedTelemetry, { saveReading: false, savePrediction: true });
+      setLatestMLPrediction(res);
+      return res;
+    } catch (err) {
+      console.warn('Live ML inference request notice:', err);
+      return null;
+    } finally {
+      setIsMLPredicting(false);
+    }
+  }, [factoryProfile, whatIfScenario]);
+
+  // Trigger initial ML prediction on startup
+  useEffect(() => {
+    runLiveMLPrediction();
+  }, [factoryProfile.id]);
 
   const login = useCallback((customerIdOrEmail?: string) => {
     let preset = FACTORY_PRESETS['DEMO001'];
@@ -118,7 +224,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentUser({
       id: preset.id,
       name: userName,
-      email: `${preset.id.toLowerCase()}@ecoleak.ai`,
+      email: `${preset.id.toLowerCase()}@ecovision.ai`,
       role: userRole,
       plantName: preset.name
     });
@@ -198,21 +304,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }));
   }, []);
 
-  // Multi-step AI analysis trigger with timed step progression
+  // Multi-step AI analysis trigger with live ML execution
   const triggerAIAnalysis = useCallback(async () => {
     setIsAnalyzing(true);
     setAnalysisStepIndex(0);
 
+    // Call live ML prediction in parallel
+    const mlPromise = runLiveMLPrediction();
+
     const steps = 7;
     for (let i = 0; i < steps; i++) {
       setAnalysisStepIndex(i);
-      await new Promise(res => setTimeout(res, 450));
+      await new Promise(res => setTimeout(res, 380));
     }
 
-    await new Promise(res => setTimeout(res, 350));
+    await mlPromise;
+    await new Promise(res => setTimeout(res, 250));
     setIsAnalyzing(false);
     setActiveTab('overview');
     setActivePipelineStage('DETECT');
+  }, [runLiveMLPrediction]);
+
+  const selectRecommendationForCalculator = useCallback((alt: CircularAlternative) => {
+    setSelectedRecommendationForCalculator(alt);
+    setActiveTab('cost-savings');
+    setActivePipelineStage('SIMULATE');
   }, []);
 
   return (
@@ -231,6 +347,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isAnalyzing,
         analysisStepIndex,
         sidebarCollapsed,
+        latestMLPrediction,
+        isMLPredicting,
+        selectedRecommendationForCalculator,
         login,
         logout,
         setSidebarCollapsed,
@@ -243,7 +362,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateWhatIfScenario,
         resetWhatIfToDefault,
         triggerAIAnalysis,
-        updateActionStatus
+        updateActionStatus,
+        runLiveMLPrediction,
+        selectRecommendationForCalculator
       }}
     >
       {children}

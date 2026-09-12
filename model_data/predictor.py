@@ -14,15 +14,15 @@ class LeakIncidentPredictor:
 
     def __init__(self, artifacts_dir: str = None):
         if artifacts_dir is None:
-            # Default to 'model' (or fallback 'model_artifacts') directory relative to this file
+            # Check current folder, 'model', or 'model_artifacts' relative to this file
             current_dir = os.path.dirname(os.path.abspath(__file__))
-            for candidate in ["model", "model_artifacts"]:
+            for candidate in [".", "model_data", "model", "model_artifacts"]:
                 path = os.path.join(current_dir, candidate)
-                if os.path.exists(path):
+                if os.path.exists(os.path.join(path, "leak_detector_model.joblib")):
                     artifacts_dir = path
                     break
             if artifacts_dir is None:
-                artifacts_dir = os.path.join(current_dir, "model")
+                artifacts_dir = os.path.join(current_dir, "model_data" if os.path.exists(os.path.join(current_dir, "model_data")) else "model")
 
         self.artifacts_dir = artifacts_dir
         self.model_path = os.path.join(artifacts_dir, "leak_detector_model.joblib")

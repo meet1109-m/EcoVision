@@ -1,9 +1,38 @@
 {
   "model_type": "RandomForestClassifier",
+  "model_version": "rf-incident-v1.0",
   "n_estimators": 200,
   "class_weight": "balanced",
+  "random_state": 42,
   "test_accuracy": 0.9525,
-  "target_column": "incident_label",
+  "classes": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "class_mapping": {
+    "0": {
+      "name": "normal",
+      "severity": "none",
+      "base_score": 10.0
+    },
+    "1": {
+      "name": "warning",
+      "severity": "low",
+      "base_score": 40.0
+    },
+    "2": {
+      "name": "leak_suspected",
+      "severity": "medium",
+      "base_score": 75.0
+    },
+    "3": {
+      "name": "critical",
+      "severity": "critical",
+      "base_score": 95.0
+    }
+  },
   "label_names": {
     "0": "Normal",
     "1": "Warning",
@@ -16,6 +45,80 @@
     "2": "High",
     "3": "Critical"
   },
+  "multiclass_metrics": {
+    "accuracy": 0.9525,
+    "precision_weighted": 0.9527,
+    "recall_weighted": 0.9525,
+    "f1_weighted": 0.9525,
+    "confusion_matrix": [
+      [
+        6975,
+        25,
+        0,
+        0
+      ],
+      [
+        18,
+        1380,
+        102,
+        0
+      ],
+      [
+        0,
+        96,
+        812,
+        92
+      ],
+      [
+        0,
+        2,
+        140,
+        358
+      ]
+    ]
+  },
+  "top_features": [
+    {
+      "feature": "emission_above_baseline_pct",
+      "importance": 33.25
+    },
+    {
+      "feature": "pressure_deviation_pct",
+      "importance": 13.59
+    },
+    {
+      "feature": "temperature_deviation_pct",
+      "importance": 9.73
+    },
+    {
+      "feature": "flow_deviation_pct",
+      "importance": 8.54
+    },
+    {
+      "feature": "rolling_std",
+      "importance": 4.07
+    },
+    {
+      "feature": "ch4_ppm",
+      "importance": 2.95
+    },
+    {
+      "feature": "co2_ppm",
+      "importance": 2.76
+    },
+    {
+      "feature": "voc_ppm",
+      "importance": 2.34
+    },
+    {
+      "feature": "pressure_bar",
+      "importance": 2.05
+    },
+    {
+      "feature": "co_ppm",
+      "importance": 1.91
+    }
+  ],
   "feature_order": [
     "equipment_type",
     "process_type",
@@ -158,6 +261,14 @@
     "shift": 3,
     "maintenance_status": 4
   },
+  "forbidden_leak_columns": [
+    "incident_label",
+    "risk_class",
+    "risk_score",
+    "leak_location",
+    "leak_severity",
+    "confirmed_by"
+  ],
   "sample_inputs": {
     "Normal": {
       "equipment_type": "Pipeline",

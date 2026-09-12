@@ -12,11 +12,17 @@ import {
   Clock, 
   Wrench,
   Award,
-  Binary
+  Binary,
+  Calculator
 } from 'lucide-react';
 
 export const AIRecommendationsView: React.FC = () => {
-  const { simulationResult, setActiveTab, setActivePipelineStage } = useApp();
+  const { 
+    simulationResult, 
+    setActiveTab, 
+    setActivePipelineStage,
+    selectRecommendationForCalculator 
+  } = useApp();
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
@@ -155,12 +161,22 @@ export const AIRecommendationsView: React.FC = () => {
                 </div>
                 <div className="flex justify-between">
                   <span>Est. Annual Benefit:</span>
-                  <strong className="text-emerald-700 font-mono">${alt.annualSavingsUSD.toLocaleString()} / yr</strong>
+                  <strong className="text-emerald-700 font-mono">₹{Math.round(alt.annualSavingsUSD * 80).toLocaleString('en-IN')} / yr</strong>
                 </div>
                 <div className="flex justify-between">
                   <span>Readiness:</span>
                   <span className="text-slate-700 font-medium">{alt.technologyAvailability}</span>
                 </div>
+
+                {/* Calculate Cost & Savings Button */}
+                <button
+                  type="button"
+                  onClick={() => selectRecommendationForCalculator(alt)}
+                  className="w-full mt-3 py-2 px-3 rounded-xl bg-gradient-to-r from-sky-600 to-emerald-600 hover:from-sky-700 hover:to-emerald-700 text-white text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 active:scale-[0.98]"
+                >
+                  <Calculator className="w-3.5 h-3.5" />
+                  <span>Calculate Cost & Savings →</span>
+                </button>
               </div>
             </div>
           );

@@ -1,208 +1,238 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 
 export const GlobeVisualization: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const size = 520;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = size * dpr;
+    canvas.height = size * dpr;
 
     let animationFrameId: number;
-    let rotationAngle = 0;
+    let rotation = 1.4; // Initial rotation angle (radians)
 
-    // High resolution canvas setup
-    const size = 480;
-    canvas.width = size * window.devicePixelRatio;
-    canvas.height = size * window.devicePixelRatio;
-    ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    // Try WebGL2 or WebGL with NPOT support
+    const gl = (canvas.getContext('webgl2', { antialias: true, alpha: true }) ||
+                canvas.getContext('webgl', { antialias: true, alpha: true })) as WebGLRenderingContext | null;
 
-    const centerX = size / 2;
-    const centerY = size / 2;
-    const radius = 175;
-
-    // Industrial Decarbonization Coordinate points on globe (lat, lon, label, risk)
-    const industrialHubs = [
-      { lat: 28.6, lon: 77.2, label: 'Delhi NCR Hub', risk: 'high' },
-      { lat: 21.7, lon: 72.9, label: 'Dahej Petrochem', risk: 'critical' },
-      { lat: 19.0, lon: 72.8, label: 'Mumbai Industrial', risk: 'medium' },
-      { lat: 51.5, lon: -0.1, label: 'Rotterdam Cluster', risk: 'low' },
-      { lat: 29.7, lon: -95.3, label: 'Houston Ship Channel', risk: 'medium' },
-      { lat: 31.2, lon: 121.4, label: 'Shanghai Basin', risk: 'high' },
-      { lat: 1.35, lon: 103.8, label: 'Jurong Island', risk: 'medium' },
-      { lat: 25.2, lon: 55.2, label: 'Jebel Ali Zone', risk: 'low' }
-    ];
-
-    const render = () => {
-      ctx.clearRect(0, 0, size, size);
-
-      // 1. Atmosphere Outer Glow
-      const glowGrad = ctx.createRadialGradient(centerX, centerY, radius * 0.85, centerX, centerY, radius * 1.35);
-      glowGrad.addColorStop(0, 'rgba(2, 132, 199, 0.25)');
-      glowGrad.addColorStop(0.5, 'rgba(14, 165, 233, 0.12)');
-      glowGrad.addColorStop(0.8, 'rgba(56, 189, 248, 0.04)');
-      glowGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
-      
-      ctx.fillStyle = glowGrad;
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius * 1.35, 0, Math.PI * 2);
-      ctx.fill();
-
-      // 2. Base Earth Sphere (Deep oceanic navy to daylight cyan-azure)
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-      ctx.clip();
-
-      const sphereGrad = ctx.createRadialGradient(
-        centerX - radius * 0.35,
-        centerY - radius * 0.35,
-        radius * 0.1,
-        centerX,
-        centerY,
-        radius
-      );
-      sphereGrad.addColorStop(0, '#38BDF8');
-      sphereGrad.addColorStop(0.3, '#0284C7');
-      sphereGrad.addColorStop(0.7, '#0369A1');
-      sphereGrad.addColorStop(1, '#0C4A6E');
-
-      ctx.fillStyle = sphereGrad;
-      ctx.fillRect(0, 0, size, size);
-
-      // 3. Render Latitude & Longitude Grids (Revolving with rotationAngle)
-      ctx.lineWidth = 1;
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.16)';
-
-      // Latitudes
-      for (let lat = -60; lat <= 60; lat += 30) {
-        const y = centerY - Math.sin((lat * Math.PI) / 180) * radius * 0.95;
-        const rLat = Math.cos((lat * Math.PI) / 180) * radius;
-        ctx.beginPath();
-        ctx.ellipse(centerX, y, rLat, rLat * 0.22, 0, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-
-      // Longitudes revolving continuously (25-45s rotation period)
-      for (let lon = 0; lon < 360; lon += 30) {
-        const currentLon = (lon + rotationAngle) % 360;
-        const rad = (currentLon * Math.PI) / 180;
-        const xOffset = Math.sin(rad) * radius;
-        const isVisible = Math.cos(rad) > 0;
-
-        if (isVisible) {
-          ctx.beginPath();
-          ctx.ellipse(centerX + xOffset * 0.45, centerY, Math.abs(Math.sin(rad)) * radius * 0.55, radius, 0, 0, Math.PI * 2);
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
-          ctx.stroke();
+    if (gl) {
+      // WebGL Vertex Shader
+      const vsSource = `
+        attribute vec2 a_position;
+        varying vec2 v_uv;
+        void main() {
+          v_uv = (a_position + 1.0) * 0.5;
+          gl_Position = vec4(a_position, 0.0, 1.0);
         }
-      }
+      `;
 
-      // 4. Stylized Continents / Landmass Silhouettes (Vector math projection)
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.32)';
-      const landClusters = [
-        { lat: 40, lon: 20, rx: 55, ry: 35 },   // Eurasia
-        { lat: 25, lon: 80, rx: 45, ry: 40 },   // Asia/India
-        { lat: 0, lon: 25, rx: 40, ry: 50 },    // Africa
-        { lat: 45, lon: 260, rx: 50, ry: 40 },  // North America
-        { lat: -15, lon: 300, rx: 35, ry: 45 }, // South America
-        { lat: -25, lon: 135, rx: 35, ry: 30 }, // Australia
-      ];
+      // WebGL Fragment Shader for 3D photorealistic Earth with realistic continents, oceans, sunlight, and cyan atmosphere
+      const fsSource = `
+        precision highp float;
+        varying vec2 v_uv;
+        uniform sampler2D u_texture;
+        uniform float u_rotation;
+        uniform float u_time;
 
-      landClusters.forEach(land => {
-        const currentLon = (land.lon + rotationAngle) % 360;
-        const rad = (currentLon * Math.PI) / 180;
-        const cosLon = Math.cos(rad);
+        const float PI = 3.14159265359;
+        const float TILT = 0.40909; // 23.44 degrees in radians
 
-        if (cosLon > -0.2) {
-          const x = centerX + Math.sin(rad) * radius * 0.85;
-          const y = centerY - Math.sin((land.lat * Math.PI) / 180) * radius * 0.75;
-          const alpha = Math.max(0, cosLon);
+        void main() {
+          // Centered coordinates [-1, 1] relative to sphere radius 0.74
+          vec2 p = (v_uv - 0.5) * 2.0;
+          float sphereRadius = 0.75;
+          float r = length(p) / sphereRadius;
 
-          ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.28})`;
-          ctx.beginPath();
-          ctx.ellipse(x, y, land.rx * 0.55 * alpha, land.ry * 0.55, 0, 0, Math.PI * 2);
-          ctx.fill();
+          // Outer Rayleigh Atmospheric Glow
+          if (r > 1.0) {
+            float halo = exp(- (r - 1.0) * 8.5) * 0.65;
+            float pulse = 0.96 + 0.04 * sin(u_time * 2.2);
+            vec3 atmosColor = vec3(0.04, 0.60, 0.98) * halo * pulse;
+            gl_FragColor = vec4(atmosColor, halo * 0.85);
+            return;
+          }
+
+          // 3D Sphere Surface Normal
+          float z = sqrt(max(0.0, 1.0 - r * r));
+          vec3 N = vec3(p.x / sphereRadius, -p.y / sphereRadius, z);
+
+          // Apply Axial Tilt (around X axis)
+          float cosT = cos(TILT);
+          float sinT = sin(TILT);
+          vec3 tiltedN = vec3(
+            N.x,
+            N.y * cosT - N.z * sinT,
+            N.y * sinT + N.z * cosT
+          );
+
+          // Apply Earth Rotation (around Y axis)
+          float cosR = cos(u_rotation);
+          float sinR = sin(u_rotation);
+          vec3 rotN = vec3(
+            tiltedN.x * cosR + tiltedN.z * sinR,
+            tiltedN.y,
+            -tiltedN.x * sinR + tiltedN.z * cosR
+          );
+
+          // Calculate Equirectangular UV mapping
+          float lat = asin(clamp(rotN.y, -0.999, 0.999));
+          float lon = atan(rotN.x, rotN.z);
+
+          float u = fract((lon / (2.0 * PI)) + 0.5);
+          float v = clamp(0.5 - (lat / PI), 0.002, 0.998);
+
+          // Sample Photorealistic Earth Map
+          vec4 texColor = texture2D(u_texture, vec2(u, v));
+
+          // 3D Directional Sunlight from top-right front
+          vec3 lightDir = normalize(vec3(0.70, 0.35, 0.65));
+          float diff = max(dot(N, lightDir), 0.0);
+
+          // Specular Reflection for Oceans
+          bool isOcean = texColor.b > (texColor.r + texColor.g) * 0.60;
+          float spec = 0.0;
+          if (isOcean && diff > 0.0) {
+            vec3 viewDir = vec3(0.0, 0.0, 1.0);
+            vec3 halfDir = normalize(lightDir + viewDir);
+            spec = pow(max(dot(N, halfDir), 0.0), 32.0) * 0.40;
+          }
+
+          // Rayleigh Atmospheric Rim/Fresnel Scattering
+          float fresnel = pow(1.0 - N.z, 2.2) * 0.70;
+          vec3 rimGlow = vec3(0.15, 0.68, 1.0) * fresnel;
+
+          // Realistic Day-Night Terminator ambient & diffuse
+          float ambient = 0.35;
+          vec3 litEarth = texColor.rgb * (ambient + diff * 0.85) + vec3(spec) + rimGlow;
+
+          gl_FragColor = vec4(litEarth, 1.0);
         }
-      });
+      `;
 
-      // 5. Render Industrial Emission Telemetry Pins
-      industrialHubs.forEach(hub => {
-        const currentLon = (hub.lon + rotationAngle) % 360;
-        const rad = (currentLon * Math.PI) / 180;
-        const cosLon = Math.cos(rad);
-
-        if (cosLon > 0.15) {
-          const x = centerX + Math.sin(rad) * radius * 0.85;
-          const y = centerY - Math.sin((hub.lat * Math.PI) / 180) * radius * 0.75;
-          const alpha = Math.max(0.2, cosLon);
-
-          // Outer pulse ring
-          const color = hub.risk === 'critical' ? 'rgba(239, 68, 68,' :
-                        hub.risk === 'high' ? 'rgba(245, 158, 11,' :
-                        hub.risk === 'medium' ? 'rgba(14, 165, 233,' : 'rgba(16, 185, 129,';
-
-          ctx.strokeStyle = `${color} ${alpha * 0.85})`;
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.arc(x, y, 6 + Math.sin(rotationAngle * 0.1) * 2, 0, Math.PI * 2);
-          ctx.stroke();
-
-          // Pin Core Dot
-          ctx.fillStyle = `${color} ${alpha})`;
-          ctx.beginPath();
-          ctx.arc(x, y, 3.5, 0, Math.PI * 2);
-          ctx.fill();
+      // Helper to compile shaders
+      const createShader = (type: number, source: string) => {
+        const shader = gl.createShader(type);
+        if (!shader) return null;
+        gl.shaderSource(shader, source);
+        gl.compileShader(shader);
+        if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+          console.error(gl.getShaderInfoLog(shader));
+          gl.deleteShader(shader);
+          return null;
         }
-      });
+        return shader;
+      };
 
-      // 6. Day-Night Atmospheric Shadow Gradient Overlay
-      const shadowGrad = ctx.createLinearGradient(centerX - radius, centerY, centerX + radius, centerY);
-      shadowGrad.addColorStop(0, 'rgba(255, 255, 255, 0.15)');
-      shadowGrad.addColorStop(0.4, 'rgba(0, 0, 0, 0)');
-      shadowGrad.addColorStop(0.85, 'rgba(15, 23, 42, 0.45)');
-      shadowGrad.addColorStop(1, 'rgba(15, 23, 42, 0.75)');
+      const vs = createShader(gl.VERTEX_SHADER, vsSource);
+      const fs = createShader(gl.FRAGMENT_SHADER, fsSource);
+      if (!vs || !fs) return;
 
-      ctx.fillStyle = shadowGrad;
-      ctx.fillRect(0, 0, size, size);
+      const program = gl.createProgram();
+      if (!program) return;
+      gl.attachShader(program, vs);
+      gl.attachShader(program, fs);
+      gl.linkProgram(program);
 
-      ctx.restore();
+      // Fullscreen quad buffer
+      const positionBuffer = gl.createBuffer();
+      gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([
+        -1, -1,
+         1, -1,
+        -1,  1,
+        -1,  1,
+         1, -1,
+         1,  1
+      ]), gl.STATIC_DRAW);
 
-      // 7. Subtle Orbit Ring (Decarbonization Sensor Grid)
-      ctx.beginPath();
-      ctx.ellipse(centerX, centerY, radius * 1.22, radius * 0.45, -Math.PI / 8, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(2, 132, 199, 0.28)';
-      ctx.lineWidth = 1.2;
-      ctx.setLineDash([6, 6]);
-      ctx.stroke();
-      ctx.setLineDash([]);
+      const aPositionLoc = gl.getAttribLocation(program, 'a_position');
+      const uTextureLoc = gl.getUniformLocation(program, 'u_texture');
+      const uRotationLoc = gl.getUniformLocation(program, 'u_rotation');
+      const uTimeLoc = gl.getUniformLocation(program, 'u_time');
 
-      // Rotate globe continuously: approx 35 seconds per complete 360 rotation
-      // (60fps * 35s = 2100 frames => 360 / 2100 ≈ 0.171 deg per frame)
-      rotationAngle = (rotationAngle + 0.18) % 360;
-      animationFrameId = requestAnimationFrame(render);
-    };
+      // Create & Load Texture
+      const texture = gl.createTexture();
+      gl.bindTexture(gl.TEXTURE_2D, texture);
+      // Temporary initial oceanic placeholder
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array([14, 116, 144, 255]));
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
 
-    render();
+      const image = new Image();
+      image.src = '/earth_texture.jpg';
+      image.crossOrigin = 'anonymous';
+      image.onload = () => {
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+        setIsLoaded(true);
+      };
 
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
+      let startTime = performance.now();
+
+      const render = () => {
+        const currentTime = (performance.now() - startTime) * 0.001;
+        // Continuous smooth Earth rotation: ~35s full revolution
+        rotation -= 0.0032;
+
+        gl.viewport(0, 0, canvas.width, canvas.height);
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        gl.useProgram(program);
+
+        gl.enableVertexAttribArray(aPositionLoc);
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.vertexAttribPointer(aPositionLoc, 2, gl.FLOAT, false, 0, 0);
+
+        gl.activeTexture(gl.TEXTURE0);
+        gl.bindTexture(gl.TEXTURE_2D, texture);
+        gl.uniform1i(uTextureLoc, 0);
+        gl.uniform1f(uRotationLoc, rotation);
+        gl.uniform1f(uTimeLoc, currentTime);
+
+        gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+        animationFrameId = requestAnimationFrame(render);
+      };
+
+      render();
+
+      return () => {
+        cancelAnimationFrame(animationFrameId);
+        gl.deleteProgram(program);
+        gl.deleteTexture(texture);
+      };
+    }
   }, []);
 
   return (
     <div className="relative flex items-center justify-center">
+      {/* Planetary Outer Aura Glow */}
+      <div className="absolute w-[440px] h-[440px] rounded-full bg-cyan-500/20 blur-3xl pointer-events-none -z-10 animate-pulse" />
+      
+      {/* 3D WebGL Earth Canvas */}
       <canvas
         ref={canvasRef}
         style={{ width: '480px', height: '480px' }}
-        className="max-w-full drop-shadow-xl select-none"
+        className="max-w-full drop-shadow-[0_20px_50px_rgba(2,132,199,0.35)] select-none rounded-full"
       />
+
+      {/* Real-time Indicator Badge */}
       <div className="absolute bottom-2 text-center pointer-events-none">
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-sky-950/60 text-sky-200 backdrop-blur-md border border-sky-400/30">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-          Live Planetary Decarbonization Grid • Simulation Mode
+        <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-950/80 text-sky-200 backdrop-blur-md border border-sky-400/40 shadow-lg">
+          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+          <span>Planet Earth Decarbonization Grid • Live 3D Stream</span>
         </span>
       </div>
     </div>

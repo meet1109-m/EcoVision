@@ -1,17 +1,10 @@
 {
-  "model_type": "XGBoostClassifier",
-  "model_version": "xgb-incident-v1.0",
-  "split_strategy": "chronological",
-  "train_samples": 40000,
-  "test_samples": 10000,
-  "train_time_range": [
-    "2026-01-01 00:00:00",
-    "2026-01-19 22:30:00"
-  ],
-  "test_time_range": [
-    "2026-01-19 22:30:00",
-    "2026-01-25 11:15:00"
-  ],
+  "model_type": "RandomForestClassifier",
+  "model_version": "rf-incident-v1.0",
+  "n_estimators": 200,
+  "class_weight": "balanced",
+  "random_state": 42,
+  "test_accuracy": 0.9525,
   "classes": [
     0,
     1,
@@ -40,90 +33,123 @@
       "base_score": 95.0
     }
   },
+  "label_names": {
+    "0": "Normal",
+    "1": "Warning",
+    "2": "Leak Suspected",
+    "3": "Confirmed Leak"
+  },
+  "risk_levels": {
+    "0": "Low",
+    "1": "Moderate",
+    "2": "High",
+    "3": "Critical"
+  },
   "multiclass_metrics": {
-    "accuracy": 0.9626,
-    "precision_weighted": 0.9618,
-    "recall_weighted": 0.9626,
-    "f1_weighted": 0.9619,
-    "roc_auc_ovr": 0.9933,
+    "accuracy": 0.9525,
+    "precision_weighted": 0.9527,
+    "recall_weighted": 0.9525,
+    "f1_weighted": 0.9525,
     "confusion_matrix": [
       [
-        7135,
-        0,
+        6975,
+        25,
         0,
         0
       ],
       [
-        0,
-        1414,
-        41,
+        18,
+        1380,
+        102,
         0
       ],
       [
         0,
-        99,
-        748,
-        83
+        96,
+        812,
+        92
       ],
       [
         0,
-        0,
-        151,
-        329
+        2,
+        140,
+        358
       ]
     ]
-  },
-  "binary_metrics": {
-    "accuracy": 1.0,
-    "precision": 1.0,
-    "recall": 1.0,
-    "f1": 1.0,
-    "roc_auc": 1.0,
-    "pr_auc": 1.0
   },
   "top_features": [
     {
       "feature": "emission_above_baseline_pct",
-      "importance": 43.8083
+      "importance": 33.25
     },
     {
-      "feature": "ch4_ppm",
-      "importance": 15.2728
+      "feature": "pressure_deviation_pct",
+      "importance": 13.59
     },
     {
-      "feature": "voc_ppm",
-      "importance": 7.4248
-    },
-    {
-      "feature": "co_ppm",
-      "importance": 6.2443
-    },
-    {
-      "feature": "so2_ppm",
-      "importance": 2.5184
-    },
-    {
-      "feature": "equipment_type_Stack",
-      "importance": 1.8868
-    },
-    {
-      "feature": "maintenance_status_ok",
-      "importance": 1.8242
-    },
-    {
-      "feature": "wind_speed_m_s",
-      "importance": 1.4203
-    },
-    {
-      "feature": "nox_ppm",
-      "importance": 1.3642
+      "feature": "temperature_deviation_pct",
+      "importance": 9.73
     },
     {
       "feature": "flow_deviation_pct",
-      "importance": 1.2366
+      "importance": 8.54
+    },
+    {
+      "feature": "rolling_std",
+      "importance": 4.07
+    },
+    {
+      "feature": "ch4_ppm",
+      "importance": 2.95
+    },
+    {
+      "feature": "co2_ppm",
+      "importance": 2.76
+    },
+    {
+      "feature": "voc_ppm",
+      "importance": 2.34
+    },
+    {
+      "feature": "pressure_bar",
+      "importance": 2.05
+    },
+    {
+      "feature": "co_ppm",
+      "importance": 1.91
     }
   ],
-  "numerical_features": [
+  "feature_order": [
+    "equipment_type",
+    "process_type",
+    "temperature_c",
+    "pressure_bar",
+    "flow_rate",
+    "production_rate",
+    "operating_hours",
+    "equipment_age_years",
+    "maintenance_due",
+    "co2_ppm",
+    "co_ppm",
+    "nox_ppm",
+    "so2_ppm",
+    "voc_ppm",
+    "ch4_ppm",
+    "pm25_mg_m3",
+    "fuel_or_material_type",
+    "ambient_temperature_c",
+    "humidity_pct",
+    "wind_speed_m_s",
+    "shift",
+    "maintenance_status",
+    "pressure_deviation_pct",
+    "flow_deviation_pct",
+    "temperature_deviation_pct",
+    "emission_above_baseline_pct",
+    "rolling_mean",
+    "rolling_std"
+  ],
+  "numeric_features": [
     "temperature_c",
     "pressure_bar",
     "flow_rate",
@@ -155,6 +181,86 @@
     "shift",
     "maintenance_status"
   ],
+  "numeric_medians": {
+    "temperature_c": 96.0,
+    "pressure_bar": 16.46,
+    "flow_rate": 202.4,
+    "production_rate": 70.3,
+    "operating_hours": 108936.5,
+    "equipment_age_years": 14.52,
+    "maintenance_due": 0.0,
+    "co2_ppm": 1052.0,
+    "co_ppm": 6.9,
+    "nox_ppm": 32.5,
+    "so2_ppm": 8.3,
+    "voc_ppm": 54.6,
+    "ch4_ppm": 37.0,
+    "pm25_mg_m3": 10.12,
+    "ambient_temperature_c": 21.1,
+    "humidity_pct": 53.8,
+    "wind_speed_m_s": 4.0,
+    "pressure_deviation_pct": 3.7,
+    "flow_deviation_pct": 6.2,
+    "temperature_deviation_pct": 1.7,
+    "emission_above_baseline_pct": 6.7,
+    "rolling_mean": 202.7,
+    "rolling_std": 12.67
+  },
+  "categorical_mappings": {
+    "equipment_type": {
+      "Boiler": 0,
+      "Compressor": 1,
+      "Furnace": 2,
+      "HeatExchanger": 3,
+      "Pipeline": 4,
+      "Pump": 5,
+      "Reactor": 6,
+      "Scrubber": 7,
+      "Separator": 8,
+      "StorageTank": 9,
+      "Valve": 10
+    },
+    "process_type": {
+      "ChemicalProcessing": 0,
+      "Compression": 1,
+      "GasProcessing": 2,
+      "Petrochemical": 3,
+      "PowerGeneration": 4,
+      "Refining": 5,
+      "Storage": 6,
+      "WasteTreatment": 7
+    },
+    "fuel_or_material_type": {
+      "Biomass": 0,
+      "ChemicalFeedstock": 1,
+      "Coal": 2,
+      "CrudeOil": 3,
+      "Diesel": 4,
+      "Hydrogen": 5,
+      "NaturalGas": 6,
+      "nan": 7
+    },
+    "shift": {
+      "Evening": 0,
+      "Morning": 1,
+      "Night": 2,
+      "nan": 3
+    },
+    "maintenance_status": {
+      "Normal": 0,
+      "Overdue": 1,
+      "Scheduled": 2,
+      "UnderMaintenance": 3,
+      "nan": 4
+    }
+  },
+  "categorical_fallbacks": {
+    "equipment_type": 0,
+    "process_type": 0,
+    "fuel_or_material_type": 7,
+    "shift": 3,
+    "maintenance_status": 4
+  },
   "forbidden_leak_columns": [
     "incident_label",
     "risk_class",
@@ -162,5 +268,127 @@
     "leak_location",
     "leak_severity",
     "confirmed_by"
-  ]
+  ],
+  "sample_inputs": {
+    "Normal": {
+      "equipment_type": "Pipeline",
+      "process_type": "Petrochemical",
+      "temperature_c": 69.5,
+      "pressure_bar": 26.85,
+      "flow_rate": 476.9,
+      "production_rate": 74.2,
+      "operating_hours": 184991.3,
+      "equipment_age_years": 24.66,
+      "maintenance_due": 2.0,
+      "co2_ppm": 1012.0,
+      "co_ppm": 6.5,
+      "nox_ppm": 29.8,
+      "so2_ppm": 6.0,
+      "voc_ppm": 62.2,
+      "ch4_ppm": 65.0,
+      "pm25_mg_m3": 8.89,
+      "fuel_or_material_type": "NaturalGas",
+      "ambient_temperature_c": 27.4,
+      "humidity_pct": 41.1,
+      "wind_speed_m_s": 4.2,
+      "shift": "Morning",
+      "maintenance_status": "Overdue",
+      "pressure_deviation_pct": 7.3,
+      "flow_deviation_pct": 4.0,
+      "temperature_deviation_pct": 0.7,
+      "emission_above_baseline_pct": 15.7,
+      "rolling_mean": 479.6,
+      "rolling_std": 24.22
+    },
+    "Warning": {
+      "equipment_type": "Scrubber",
+      "process_type": "Refining",
+      "temperature_c": 59.3,
+      "pressure_bar": 4.12,
+      "flow_rate": 223.3,
+      "production_rate": 79.9,
+      "operating_hours": 13219.0,
+      "equipment_age_years": 1.76,
+      "maintenance_due": 1.0,
+      "co2_ppm": 1309.0,
+      "co_ppm": 7.4,
+      "nox_ppm": 33.9,
+      "so2_ppm": 9.4,
+      "voc_ppm": 84.2,
+      "ch4_ppm": 48.0,
+      "pm25_mg_m3": 9.1,
+      "fuel_or_material_type": "NaturalGas",
+      "ambient_temperature_c": 22.6,
+      "humidity_pct": 31.1,
+      "wind_speed_m_s": 3.9,
+      "shift": "Morning",
+      "maintenance_status": "Scheduled",
+      "pressure_deviation_pct": 12.5,
+      "flow_deviation_pct": 15.6,
+      "temperature_deviation_pct": 5.6,
+      "emission_above_baseline_pct": 20.4,
+      "rolling_mean": 218.2,
+      "rolling_std": 22.74
+    },
+    "Leak Suspected": {
+      "equipment_type": "Reactor",
+      "process_type": "GasProcessing",
+      "temperature_c": 120.8,
+      "pressure_bar": 15.61,
+      "flow_rate": 116.8,
+      "production_rate": 78.9,
+      "operating_hours": 103695.4,
+      "equipment_age_years": 13.82,
+      "maintenance_due": 2.0,
+      "co2_ppm": 1847.0,
+      "co_ppm": 7.9,
+      "nox_ppm": 32.5,
+      "so2_ppm": 4.1,
+      "voc_ppm": 77.6,
+      "ch4_ppm": 353.0,
+      "pm25_mg_m3": 8.83,
+      "fuel_or_material_type": "NaturalGas",
+      "ambient_temperature_c": 25.0,
+      "humidity_pct": 48.6,
+      "wind_speed_m_s": 5.1,
+      "shift": "Morning",
+      "maintenance_status": "Overdue",
+      "pressure_deviation_pct": 14.6,
+      "flow_deviation_pct": 17.8,
+      "temperature_deviation_pct": 5.7,
+      "emission_above_baseline_pct": 140.0,
+      "rolling_mean": 116.0,
+      "rolling_std": 27.67
+    },
+    "Confirmed Leak": {
+      "equipment_type": "Reactor",
+      "process_type": "Petrochemical",
+      "temperature_c": 198.4,
+      "pressure_bar": 6.18,
+      "flow_rate": 173.6,
+      "production_rate": 60.8,
+      "operating_hours": 109070.5,
+      "equipment_age_years": 14.54,
+      "maintenance_due": 0.0,
+      "co2_ppm": 3624.0,
+      "co_ppm": 12.9,
+      "nox_ppm": 73.3,
+      "so2_ppm": 38.3,
+      "voc_ppm": 232.2,
+      "ch4_ppm": 50.0,
+      "pm25_mg_m3": 37.64,
+      "fuel_or_material_type": "CrudeOil",
+      "ambient_temperature_c": 15.3,
+      "humidity_pct": 77.7,
+      "wind_speed_m_s": 6.0,
+      "shift": "Evening",
+      "maintenance_status": "Normal",
+      "pressure_deviation_pct": 68.6,
+      "flow_deviation_pct": 24.6,
+      "temperature_deviation_pct": 20.7,
+      "emission_above_baseline_pct": 112.0,
+      "rolling_mean": 130.0,
+      "rolling_std": 47.84
+    }
+  }
 }

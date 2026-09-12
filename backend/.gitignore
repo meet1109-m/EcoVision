@@ -1,13 +1,42 @@
+# Python Bytecode & Cache
 __pycache__/
 *.py[cod]
 *$py.class
 .pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Environment Variables & Secrets
 .env
+.env.*
+*.env
+!.env.example
+*.pem
+*.key
+
+# Database Files
 *.db
+*.sqlite
 *.sqlite3
+ecovision.db
+
+# Virtual Environments
 .venv/
 venv/
 ENV/
+env/
+
+# Build & Dist
 dist/
 build/
 *.egg-info/
+
+# Testing & Coverage
+.coverage
+htmlcov/
+
+# Logs & Temp
+logs/
+*.log
+*.tmp
+*.bak

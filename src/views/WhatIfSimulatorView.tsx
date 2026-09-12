@@ -15,7 +15,10 @@ import {
   BatteryCharging,
   Recycle,
   Truck,
-  Gauge
+  Gauge,
+  Cpu,
+  Zap,
+  RefreshCw
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -35,6 +38,9 @@ export const WhatIfSimulatorView: React.FC = () => {
     resetWhatIfToDefault, 
     simulationResult,
     factoryProfile,
+    latestMLPrediction,
+    isMLPredicting,
+    runLiveMLPrediction,
     setActiveTab,
     setActivePipelineStage 
   } = useApp();
@@ -84,7 +90,7 @@ export const WhatIfSimulatorView: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap">
             <button
               type="button"
               onClick={resetWhatIfToDefault}
@@ -92,6 +98,19 @@ export const WhatIfSimulatorView: React.FC = () => {
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Reset Baseline</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => runLiveMLPrediction()}
+              disabled={isMLPredicting}
+              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50"
+            >
+              {isMLPredicting ? (
+                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Cpu className="w-3.5 h-3.5" />
+              )}
+              <span>{isMLPredicting ? 'Evaluating RF...' : 'Evaluate with ML Model'}</span>
             </button>
             <button
               type="button"
@@ -175,7 +194,7 @@ export const WhatIfSimulatorView: React.FC = () => {
           </div>
           <div className="mt-2">
             <span className="text-2xl font-extrabold font-mono text-slate-900">
-              ${deltas.estimatedAnnualSavingsUSD.toLocaleString()}
+              ₹{Math.round(deltas.estimatedAnnualSavingsUSD * 80).toLocaleString('en-IN')}
             </span>
           </div>
           <div className="mt-2 flex items-center justify-between text-xs pt-1.5 border-t border-slate-100">

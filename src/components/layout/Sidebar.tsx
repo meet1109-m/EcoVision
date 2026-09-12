@@ -16,7 +16,8 @@ import {
   Cpu,
   ChevronDown,
   Menu,
-  X
+  X,
+  Calculator
 } from 'lucide-react';
 
 interface NavItem {
@@ -24,20 +25,19 @@ interface NavItem {
   stage: PipelineStage;
   label: string;
   icon: React.ComponentType<{ className?: string }>;
-  badge?: string;
-  badgeColor?: string;
 }
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'overview', stage: 'DETECT', label: 'Executive Overview', icon: LayoutDashboard },
-  { id: 'factory-profile', stage: 'INPUT', label: 'Factory Data Ingestion', icon: Factory, badge: '01' },
-  { id: 'emission-intelligence', stage: 'DETECT', label: 'Emission Intelligence', icon: Activity, badge: '87 Risk', badgeColor: 'bg-rose-100 text-rose-700' },
-  { id: 'hotspot-detection', stage: 'LOCALIZE', label: 'Digital Twin Hotspots', icon: Crosshair, badge: '3 Points', badgeColor: 'bg-amber-100 text-amber-800' },
-  { id: 'ai-recommendations', stage: 'RECOMMEND', label: 'Circular Alternatives', icon: Sparkles, badge: '3 Scenarios', badgeColor: 'bg-sky-100 text-sky-800' },
+  { id: 'factory-profile', stage: 'INPUT', label: 'Factory Data Ingestion', icon: Factory },
+  { id: 'emission-intelligence', stage: 'DETECT', label: 'Emission Intelligence', icon: Activity },
+  { id: 'hotspot-detection', stage: 'LOCALIZE', label: 'Digital Twin Hotspots', icon: Crosshair },
+  { id: 'ai-recommendations', stage: 'RECOMMEND', label: 'Circular Alternatives', icon: Sparkles },
+  { id: 'cost-savings', stage: 'SIMULATE', label: 'Cost & Savings', icon: Calculator },
   { id: 'optimizer', stage: 'RECOMMEND', label: 'Multi-Criteria Optimizer', icon: Sliders },
-  { id: 'what-if', stage: 'SIMULATE', label: 'What-If Simulator', icon: Binary, badge: 'Interactive', badgeColor: 'bg-emerald-100 text-emerald-800' },
+  { id: 'what-if', stage: 'SIMULATE', label: 'What-If Simulator', icon: Binary },
   { id: 'impact-report', stage: 'ACT', label: 'Decarbonization Report', icon: FileText },
-  { id: 'action-center', stage: 'ACT', label: 'Action Center', icon: CheckSquare, badge: '4 Tasks', badgeColor: 'bg-indigo-100 text-indigo-800' },
+  { id: 'action-center', stage: 'ACT', label: 'Action Center', icon: CheckSquare },
 ];
 
 export const Sidebar: React.FC = () => {
@@ -70,30 +70,32 @@ export const Sidebar: React.FC = () => {
 
       <aside className={`
         fixed top-0 bottom-0 left-0 z-40
-        w-64 bg-white/95 backdrop-blur-md border-r border-slate-200 
+        w-64 bg-white/65 backdrop-blur-2xl border-r border-white/70 shadow-2xl
         flex flex-col justify-between transition-transform duration-300 ease-in-out
         ${sidebarCollapsed ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         {/* Brand Header */}
         <div>
-          <div className="h-16 px-5 flex items-center justify-between border-b border-slate-100">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-sky-600 to-cyan-500 flex items-center justify-center text-white shadow-md shadow-sky-500/20">
-                <Cpu className="w-5 h-5 text-white" />
-              </div>
+          <div className="h-16 px-5 flex items-center justify-between border-b border-white/50 bg-white/40 backdrop-blur-md">
+            <div className="flex items-center gap-2.5">
+              <img 
+                src="/ecovision_logo.png" 
+                alt="EcoVision" 
+                className="w-9 h-9 rounded-xl object-contain shadow-sm border border-emerald-500/30 bg-white p-0.5" 
+              />
               <div>
-                <div className="flex items-center gap-1">
-                  <span className="font-extrabold text-base tracking-tight text-slate-900">ECOLEAK</span>
-                  <span className="font-bold text-xs bg-sky-100 text-sky-700 px-1.5 py-0.5 rounded font-mono">AI</span>
+                <div className="flex items-center gap-0.5">
+                  <span className="font-extrabold text-base tracking-tight text-slate-900">Eco</span>
+                  <span className="font-extrabold text-base tracking-tight text-emerald-600">Vision</span>
                 </div>
-                <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest">
-                  Industrial Emission Intelligence
+                <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-widest">
+                  Industrial Intelligence
                 </p>
               </div>
             </div>
             <button
               type="button"
-              className="lg:hidden p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100"
+              className="lg:hidden p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-white/60"
               onClick={() => setSidebarCollapsed(false)}
             >
               <X className="w-5 h-5" />
@@ -101,53 +103,45 @@ export const Sidebar: React.FC = () => {
           </div>
 
           {/* Plant Selector Dropdown */}
-          <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/70">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-600 block mb-1">
+          <div className="px-4 py-3 border-b border-white/40 bg-white/30 backdrop-blur-sm">
+            <label className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block mb-1">
               Active Industrial Facility
             </label>
             <div className="relative">
               <select
                 value={activePresetId}
                 onChange={(e) => loadPreset(e.target.value)}
-                className="w-full text-xs font-semibold bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 pr-7 text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 appearance-none cursor-pointer truncate shadow-sm"
+                className="w-full text-xs font-semibold bg-white/80 backdrop-blur-md border border-white/90 rounded-xl px-3 py-2 pr-7 text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 appearance-none cursor-pointer truncate shadow-sm"
               >
                 <option value="DEMO001">GreenTech Chemicals (DEMO001)</option>
                 <option value="DEMO002">FutureChem Industries (DEMO002)</option>
                 <option value="DEMO003">Apex Low-Carbon Cement (DEMO003)</option>
               </select>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-2.5 pointer-events-none" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 absolute right-2.5 top-3 pointer-events-none" />
             </div>
           </div>
 
-          {/* Navigation Links */}
-          <nav className="p-3 space-y-1 overflow-y-auto max-h-[calc(100vh-270px)]">
-            <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-600">
-              Decarbonization Workflow
-            </div>
+          {/* Clean Navigation Links - Numbers Removed as Requested */}
+          <nav className="p-3 space-y-1.5 overflow-y-auto max-h-[calc(100vh-14.5rem)]">
             {NAV_ITEMS.map((item) => {
-              const isActive = activeTab === item.id;
               const Icon = item.icon;
+              const isActive = activeTab === item.id;
 
               return (
                 <button
                   key={item.id}
                   type="button"
                   onClick={() => handleNav(item)}
-                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                  className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-xs transition-all ${
                     isActive
-                      ? 'bg-sky-50 text-sky-900 font-semibold shadow-sm border border-sky-200/80'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70'
+                      ? 'bg-slate-900 text-white font-bold shadow-lg shadow-slate-900/25 scale-[1.02]'
+                      : 'text-slate-700 hover:text-slate-950 hover:bg-white/60 font-medium'
                   }`}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-sky-600' : 'text-slate-600'}`} />
+                    <Icon className={`w-4 h-4 flex-shrink-0 ${isActive ? 'text-emerald-400' : 'text-slate-500'}`} />
                     <span className="truncate">{item.label}</span>
                   </div>
-                  {item.badge && (
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${item.badgeColor || 'bg-slate-100 text-slate-600'}`}>
-                      {item.badge}
-                    </span>
-                  )}
                 </button>
               );
             })}
@@ -155,24 +149,28 @@ export const Sidebar: React.FC = () => {
         </div>
 
         {/* User Footer & Logout */}
-        <div className="p-3 border-t border-slate-200 bg-white/90">
-          <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 mb-2 flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-700 font-bold text-xs">
-              {currentUser?.name ? currentUser.name.split(' ').map(n => n[0]).join('') : 'OP'}
+        <div className="p-3 border-t border-white/50 bg-white/40 backdrop-blur-md">
+          <div className="p-2.5 rounded-2xl bg-white/70 backdrop-blur-md border border-white/80 mb-2 flex items-center gap-3 shadow-sm">
+            <div className="w-8 h-8 rounded-full bg-emerald-100 border border-emerald-300 flex items-center justify-center text-emerald-800 font-bold text-xs shadow-sm">
+              {currentUser?.name?.charAt(0) || 'E'}
             </div>
             <div className="min-w-0 flex-1">
-              <div className="text-xs font-semibold text-slate-800 truncate">{currentUser?.name || 'Operator'}</div>
-              <div className="text-[10px] text-slate-500 truncate">{currentUser?.role || 'ESG Specialist'}</div>
+              <div className="text-xs font-bold text-slate-900 truncate">
+                {currentUser?.name || 'Chief Sustainability Officer'}
+              </div>
+              <div className="text-[10px] text-slate-500 truncate">
+                {currentUser?.role || 'Plant Technical Director'}
+              </div>
             </div>
           </div>
 
           <button
             type="button"
             onClick={logout}
-            className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-slate-600 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50/80 border border-transparent hover:border-rose-200 transition-colors"
           >
             <LogOut className="w-3.5 h-3.5" />
-            <span>Sign Out Session</span>
+            <span>Sign Out Workspace</span>
           </button>
         </div>
       </aside>

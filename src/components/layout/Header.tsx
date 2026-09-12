@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
+import { checkBackendHealth, BackendHealth } from '../../services/api';
 import { 
   Menu, 
   Bell, 
@@ -25,36 +26,55 @@ export const Header: React.FC = () => {
   } = useApp();
 
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [backendHealth, setBackendHealth] = useState<BackendHealth | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const updateHealth = async () => {
+      const h = await checkBackendHealth();
+      if (isMounted) setBackendHealth(h);
+    };
+    updateHealth();
+    const timer = setInterval(updateHealth, 15000);
+    return () => {
+      isMounted = false;
+      clearInterval(timer);
+    };
+  }, []);
 
   return (
-    <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200 px-6 py-3.5">
+    <header className="sticky top-0 z-30 bg-white/50 backdrop-blur-xl border-b border-white/60 px-6 py-3 shadow-sm">
       <div className="flex items-center justify-between gap-4">
         {/* Left: Mobile Toggle & Context Breadcrumb */}
         <div className="flex items-center gap-3">
           <button
             type="button"
             onClick={() => setSidebarCollapsed(true)}
-            className="lg:hidden p-2 rounded-lg text-slate-500 hover:text-slate-700 hover:bg-slate-100"
+            className="lg:hidden p-2 rounded-xl text-slate-600 hover:text-slate-900 bg-white/70 border border-white/80"
           >
             <Menu className="w-5 h-5" />
           </button>
 
-          <div className="hidden sm:flex items-center gap-2 text-xs">
-            <Building2 className="w-4 h-4 text-sky-600" />
-            <span className="font-semibold text-slate-800">{factoryProfile.name}</span>
+          <div className="hidden sm:flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/70 backdrop-blur-md border border-white/80 shadow-sm text-xs">
+            <Building2 className="w-4 h-4 text-emerald-600" />
+            <span className="font-bold text-slate-900">{factoryProfile.name}</span>
             <span className="text-slate-300">/</span>
-            <span className="text-slate-500">{factoryProfile.location}</span>
+            <span className="text-slate-600 font-medium">{factoryProfile.location}</span>
           </div>
         </div>
 
         {/* Right: Telemetry status, AI Trigger, Notification bell, Export */}
-        <div className="flex items-center gap-3">
-          {/* Live Telemetry Ping */}
-          <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 border border-slate-200 text-xs text-slate-600">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="font-medium">Sensors: 18 Online</span>
+        <div className="flex items-center gap-2.5">
+          {/* Live Telemetry & Backend Status Badge */}
+          <div className="hidden md:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/70 backdrop-blur-md border border-white/80 shadow-sm text-xs text-slate-700">
+            <span className={`w-2.5 h-2.5 rounded-full ${backendHealth?.status === 'ok' ? 'bg-emerald-500 animate-pulse' : 'bg-emerald-500'}`} />
+            <span className="font-semibold">
+              {backendHealth?.status === 'ok' ? 'API Online' : 'Sensors: 18 Online'}
+            </span>
             <span className="text-slate-300">|</span>
-            <span className="font-mono text-rose-600 font-bold">1 Anomaly</span>
+            <span className={`font-mono font-bold ${backendHealth?.ml_model === 'loaded' ? 'text-emerald-700' : 'text-rose-600'}`}>
+              {backendHealth?.ml_model === 'loaded' ? 'ML: RF-95.2%' : '1 Anomaly'}
+            </span>
           </div>
 
           {/* Quick AI Trigger */}
@@ -62,7 +82,7 @@ export const Header: React.FC = () => {
             type="button"
             onClick={() => triggerAIAnalysis()}
             disabled={isAnalyzing}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-sky-600 to-cyan-600 hover:from-sky-700 hover:to-cyan-700 text-white text-xs font-semibold shadow-sm shadow-sky-600/20 transition-all active:scale-95 disabled:opacity-50"
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-gradient-to-r from-emerald-600 via-teal-600 to-sky-600 hover:from-emerald-700 hover:to-sky-700 text-white text-xs font-bold shadow-md shadow-emerald-600/20 transition-all active:scale-95 disabled:opacity-50"
           >
             {isAnalyzing ? (
               <RefreshCw className="w-3.5 h-3.5 animate-spin" />
@@ -77,7 +97,7 @@ export const Header: React.FC = () => {
             <button
               type="button"
               onClick={() => setNotificationsOpen(!notificationsOpen)}
-              className="relative p-2 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200"
+              className="relative p-2 rounded-full bg-white/70 backdrop-blur-md border border-white/80 text-slate-600 hover:text-slate-900 shadow-sm transition-all"
             >
               <Bell className="w-4 h-4" />
               <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-white"></span>

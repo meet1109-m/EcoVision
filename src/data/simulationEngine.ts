@@ -370,7 +370,7 @@ export function runSimulation(profile: FactoryProfile, weights: OptimizerWeights
       title: 'Install Waste Heat Recuperator Ducting for Boiler Preheat',
       targetUnit: 'Exhaust Stack & Flue Gas Duct',
       description: 'Fabricate tie-in spool for plate-and-shell heat exchanger to recover ~380 kWth of sensible heat from exhaust stream.',
-      expectedImpact: 'Estimated $33,500 annual fuel savings and 122 tonnes CO₂ avoided',
+      expectedImpact: 'Estimated ₹27,50,000 annual fuel savings and 122 tonnes CO₂ avoided',
       estimatedEffort: 'Medium (1-4 wks)',
       feasibilityScore: 92,
       status: 'Pending',

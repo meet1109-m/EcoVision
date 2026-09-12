@@ -13,10 +13,15 @@ def export():
     print("STEP 1: TRAINING & PERSISTING LEAK PREDICTION MODEL & METADATA")
     print("=" * 75)
 
-    artifacts_dir = "model"
+    artifacts_dir = "model_data" if os.path.exists("model_data") else "model"
     os.makedirs(artifacts_dir, exist_ok=True)
 
-    dataset_dir = "dataset" if os.path.exists(os.path.join("dataset", "train_data.csv")) else "."
+    if os.path.exists(os.path.join("model_data", "train_data.csv")):
+        dataset_dir = "model_data"
+    elif os.path.exists(os.path.join("dataset", "train_data.csv")):
+        dataset_dir = "dataset"
+    else:
+        dataset_dir = "."
     train_path = os.path.join(dataset_dir, "train_data.csv")
     test_path = os.path.join(dataset_dir, "test_data.csv")
 

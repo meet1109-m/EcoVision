@@ -98,6 +98,8 @@ export interface CircularAlternative {
   paybackPeriodMonths: number;
   capexEstimatedUSD: number;
   annualSavingsUSD: number;
+  capexEstimatedINR?: number;
+  annualSavingsINR?: number;
   co2SavedAnnualTonnes: number;
   keyInterventions: string[];
 }
@@ -143,6 +145,7 @@ export type NavigationTab =
   | 'hotspot-detection'
   | 'digital-twin'
   | 'ai-recommendations'
+  | 'cost-savings'
   | 'optimizer'
   | 'what-if'
   | 'impact-report'

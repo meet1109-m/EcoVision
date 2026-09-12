@@ -1,8 +1,9 @@
 """
 ML Inference Engine for Industrial Telemetry Prediction.
 
-Loads the serialized XGBoost pipeline and runs high-performance inference
-with probability estimation, severity classification, and feature contribution.
+Loads the production Random Forest incident detection model and metadata
+to run high-performance inference with probability estimation, severity classification,
+dynamic risk scoring, and feature explainability.
 """
 import json
 import logging
@@ -11,51 +12,106 @@ from typing import Dict, Any, List, Optional
 
 import joblib
 import numpy as np
-
-from app.ml.feature_pipeline import prepare_input_dataframe
+import pandas as pd
 
 logger = logging.getLogger(__name__)
 
 CURRENT_DIR = Path(__file__).resolve().parent
-MODEL_PATH = CURRENT_DIR / "model_pipeline.joblib"
-METADATA_PATH = CURRENT_DIR / "model_metadata.json"
+
+
+def _clean_str(s: Any) -> str:
+    """Normalize string for robust categorical lookup (handles case, spaces, underscores)."""
+    return str(s).strip().lower().replace("_", "").replace(" ", "").replace("-", "")
 
 
 class LeakPredictor:
-    """Singleton predictor loading the trained pipeline and metadata."""
+    """Singleton predictor loading the trained leak detection model and metadata."""
 
     _instance = None
 
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(LeakPredictor, cls).__new__(cls)
-            cls._instance._pipeline = None
+            cls._instance._model = None
             cls._instance._metadata = None
+            cls._instance._cat_lookup = {}
             cls._instance._load_model()
         return cls._instance
 
     def _load_model(self):
-        if MODEL_PATH.exists():
-            try:
-                self._pipeline = joblib.load(MODEL_PATH)
-                logger.info(f"Loaded ML model pipeline from {MODEL_PATH}")
-            except Exception as e:
-                logger.error(f"Error loading model pipeline from {MODEL_PATH}: {e}")
-                self._pipeline = None
-        else:
-            logger.warning(f"Model file not found at {MODEL_PATH}. Prediction service will use fallback heuristic.")
+        # Search candidate model paths
+        model_candidates = [
+            CURRENT_DIR / "leak_detector_model.joblib",
+            CURRENT_DIR.parents[1] / "model" / "leak_detector_model.joblib",
+            CURRENT_DIR / "model_pipeline.joblib",
+            Path("model") / "leak_detector_model.joblib",
+        ]
 
-        if METADATA_PATH.exists():
+        model_path = None
+        for p in model_candidates:
+            if p.exists():
+                model_path = p
+                break
+
+        if model_path:
             try:
-                with open(METADATA_PATH, "r", encoding="utf-8") as f:
-                    self._metadata = json.load(f)
+                self._model = joblib.load(model_path)
+                logger.info(f"Loaded ML model from {model_path}")
             except Exception as e:
-                logger.error(f"Error loading metadata from {METADATA_PATH}: {e}")
+                logger.error(f"Error loading model from {model_path}: {e}")
+                self._model = None
+        else:
+            logger.warning(f"No model file found in search paths. Using fallback heuristic.")
+            self._model = None
+
+        # Search candidate metadata paths
+        meta_candidates = [
+            CURRENT_DIR / "model_metadata.json",
+            CURRENT_DIR.parents[1] / "model" / "model_metadata.json",
+            Path("model") / "model_metadata.json",
+        ]
+
+        meta_path = None
+        for p in meta_candidates:
+            if p.exists():
+                meta_path = p
+                break
+
+        if meta_path:
+            try:
+                with open(meta_path, "r", encoding="utf-8") as f:
+                    self._metadata = json.load(f)
+                logger.info(f"Loaded ML metadata from {meta_path}")
+                self._build_cat_lookup()
+            except Exception as e:
+                logger.error(f"Error loading metadata from {meta_path}: {e}")
                 self._metadata = None
+        else:
+            self._metadata = None
+
+    def _build_cat_lookup(self):
+        """Constructs case-insensitive and alias-aware dictionary for categorical encodings."""
+        self._cat_lookup = {}
+        if not self._metadata or "categorical_mappings" not in self._metadata:
+            return
+
+        for col, mapping in self._metadata["categorical_mappings"].items():
+            col_lookup = {}
+            for val, code in mapping.items():
+                col_lookup[_clean_str(val)] = int(code)
+
+            # Common aliases
+            if col == "maintenance_status":
+                normal_code = mapping.get("Normal", 0)
+                col_lookup["ok"] = normal_code
+                col_lookup["good"] = normal_code
+                col_lookup["pass"] = normal_code
+
+            self._cat_lookup[col] = col_lookup
 
     @property
     def is_loaded(self) -> bool:
-        return self._pipeline is not None
+        return self._model is not None
 
     @property
     def metadata(self) -> Dict[str, Any]:
@@ -64,23 +120,59 @@ class LeakPredictor:
     @property
     def model_version(self) -> str:
         if self._metadata:
-            return self._metadata.get("model_version", "xgb-incident-v1.0")
-        return "xgb-incident-v1.0"
+            return self._metadata.get("model_version", "rf-incident-v1.0")
+        return "rf-incident-v1.0"
+
+    def _preprocess_input(self, feature_data: Dict[str, Any]) -> pd.DataFrame:
+        """Preprocesses dictionary into feature vector matching model schema."""
+        feature_order = self._metadata.get("feature_order", [])
+        numeric_medians = self._metadata.get("numeric_medians", {})
+        categorical_features = self._metadata.get("categorical_features", [])
+        categorical_fallbacks = self._metadata.get("categorical_fallbacks", {})
+
+        row = []
+        for col in feature_order:
+            val = feature_data.get(col, None)
+
+            if col in categorical_features:
+                fallback = categorical_fallbacks.get(col, 0)
+                if val is None or pd.isna(val) or val == "":
+                    code = fallback
+                else:
+                    clean_val = _clean_str(val)
+                    lookup = self._cat_lookup.get(col, {})
+                    code = lookup.get(clean_val, fallback)
+                row.append(float(code))
+            else:
+                if val is None or pd.isna(val) or val == "":
+                    num_val = numeric_medians.get(col, 0.0)
+                else:
+                    try:
+                        num_val = float(val)
+                    except (ValueError, TypeError):
+                        num_val = numeric_medians.get(col, 0.0)
+                row.append(num_val)
+
+        return pd.DataFrame([row], columns=feature_order)
 
     def predict(self, feature_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Runs ML model inference on an input feature dictionary.
-        Returns detailed predictions and probabilities.
+        Returns detailed predictions, probabilities, and risk metrics.
         """
-        df_input = prepare_input_dataframe(feature_data)
-
         if not self.is_loaded:
-            # Fallback heuristic if model file is not present
             return self._fallback_prediction(feature_data)
 
-        # 1. Model inference
-        pred_array = self._pipeline.predict(df_input)
-        proba_array = self._pipeline.predict_proba(df_input)[0]
+        # 1. Feature Preprocessing
+        if self._metadata and "feature_order" in self._metadata:
+            df_input = self._preprocess_input(feature_data)
+        else:
+            from app.ml.feature_pipeline import prepare_input_dataframe
+            df_input = prepare_input_dataframe(feature_data)
+
+        # 2. Model Inference
+        pred_array = self._model.predict(df_input)
+        proba_array = self._model.predict_proba(df_input)[0]
 
         predicted_label = int(pred_array[0])
         class_mapping = {
@@ -91,10 +183,10 @@ class LeakPredictor:
         }
 
         class_info = class_mapping.get(predicted_label, class_mapping[0])
-        
+
         # Probabilities
         class_probs = {str(i): round(float(proba_array[i]), 4) for i in range(len(proba_array))}
-        
+
         # Incident probability: sum of all non-zero incident classes (1, 2, 3)
         incident_prob = round(float(1.0 - proba_array[0]), 4)
         if incident_prob < 0.0:
@@ -104,7 +196,6 @@ class LeakPredictor:
         confidence = round(float(proba_array[predicted_label]), 4)
 
         # Dynamic continuous risk score in [0.0, 100.0] based on probability distribution
-        # Weighted expectation of class base scores
         expected_risk_score = (
             proba_array[0] * 8.0
             + (proba_array[1] if len(proba_array) > 1 else 0) * 45.0
