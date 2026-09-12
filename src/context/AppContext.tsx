@@ -40,7 +40,7 @@ interface AppContextType {
   selectedRecommendationForCalculator: CircularAlternative | null;
   
   // Actions
-  login: (customerIdOrEmail?: string) => void;
+  login: (customerIdOrEmail?: string, customUser?: Partial<User>) => void;
   logout: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   updateProfile: (updates: Partial<FactoryProfile>) => void;
@@ -201,33 +201,87 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     runLiveMLPrediction();
   }, [factoryProfile.id]);
 
-  const login = useCallback((customerIdOrEmail?: string) => {
-    let preset = FACTORY_PRESETS['DEMO001'];
+  // Restore session from localStorage on initial load
+  useEffect(() => {
+    try {
+      const savedUserStr = localStorage.getItem('ecovision_current_user');
+      const token = localStorage.getItem('ecovision_token');
+      if (savedUserStr) {
+        const savedUser: User = JSON.parse(savedUserStr);
+        setCurrentUser(savedUser);
+        setIsAuthenticated(true);
+        const pid = (savedUser.id && FACTORY_PRESETS[savedUser.id]) ? savedUser.id : 'DEMO001';
+        setActivePresetId(pid);
+        setFactoryProfile(FACTORY_PRESETS[pid]);
+      }
+    } catch {
+      // Ignore parsing errors
+    }
+  }, []);
+
+  const login = useCallback((customerIdOrEmail?: string, customUser?: Partial<User>) => {
+    let presetId = 'DEMO001';
     let userName = 'Dr. Rajesh Sharma';
     let userRole = 'Chief Sustainability Officer';
 
-    if (customerIdOrEmail && customerIdOrEmail.toUpperCase().includes('DEMO002')) {
-      preset = FACTORY_PRESETS['DEMO002'];
-      setActivePresetId('DEMO002');
+    const normalized = customerIdOrEmail ? customerIdOrEmail.trim().toUpperCase() : '';
+
+    if (normalized === 'DEMO002' || normalized.includes('DEMO002')) {
+      presetId = 'DEMO002';
       userName = 'Ananya Patel';
       userRole = 'Lead Process & Decarbonization Engineer';
-    } else if (customerIdOrEmail && customerIdOrEmail.toUpperCase().includes('DEMO003')) {
-      preset = FACTORY_PRESETS['DEMO003'];
-      setActivePresetId('DEMO003');
+    } else if (normalized === 'DEMO003' || normalized.includes('DEMO003')) {
+      presetId = 'DEMO003';
       userName = 'Vikram Singhania';
       userRole = 'Plant Technical Director';
-    } else {
-      setActivePresetId('DEMO001');
+    } else if (normalized === 'DEMO001' || normalized.includes('DEMO001')) {
+      presetId = 'DEMO001';
+      userName = 'Dr. Rajesh Sharma';
+      userRole = 'Chief Sustainability Officer';
+    } else if (customUser?.name) {
+      userName = customUser.name;
+      userRole = customUser.role || 'Senior Plant Engineer';
+    } else if (customerIdOrEmail && customerIdOrEmail.includes('@')) {
+      // Format human name from email (e.g. john.doe@company.com -> John Doe)
+      const rawPrefix = customerIdOrEmail.split('@')[0];
+      const cleaned = rawPrefix.replace(/[._-]/g, ' ');
+      userName = cleaned
+        .split(' ')
+        .filter(Boolean)
+        .map(part => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+        .join(' ') || customerIdOrEmail;
+      userRole = customUser?.role || 'Senior Plant Engineer';
+    } else if (customerIdOrEmail) {
+      userName = customerIdOrEmail;
+      userRole = customUser?.role || 'Plant Engineer';
     }
 
+    if (customUser?.name) {
+      userName = customUser.name;
+    }
+    if (customUser?.role) {
+      userRole = customUser.role;
+    }
+
+    const preset = FACTORY_PRESETS[presetId] || FACTORY_PRESETS['DEMO001'];
+    setActivePresetId(presetId);
     setFactoryProfile(preset);
-    setCurrentUser({
-      id: preset.id,
+
+    const newUser: User = {
+      id: customUser?.id || preset.id,
       name: userName,
-      email: `${preset.id.toLowerCase()}@ecovision.ai`,
+      email: customUser?.email || customerIdOrEmail || `${preset.id.toLowerCase()}@ecovision.ai`,
       role: userRole,
-      plantName: preset.name
-    });
+      plantName: customUser?.plantName || preset.name
+    };
+
+    setCurrentUser(newUser);
+    try {
+      localStorage.setItem('ecovision_current_user', JSON.stringify(newUser));
+    } catch {
+      // ignore
+    }
+
     setIsAuthenticated(true);
     setActiveTab('factory-profile');
     setActivePipelineStage('INPUT');
@@ -236,6 +290,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const logout = useCallback(() => {
     setIsAuthenticated(false);
     setCurrentUser(null);
+    try {
+      localStorage.removeItem('ecovision_token');
+      localStorage.removeItem('ecovision_current_user');
+    } catch {
+      // ignore
+    }
     setActiveTab('factory-profile');
     setActivePipelineStage('INPUT');
   }, []);
@@ -249,13 +309,45 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const loadPreset = useCallback((presetId: string) => {
     if (FACTORY_PRESETS[presetId]) {
-      setFactoryProfile(FACTORY_PRESETS[presetId]);
+      const newPreset = FACTORY_PRESETS[presetId];
+      setFactoryProfile(newPreset);
       setActivePresetId(presetId);
-      if (currentUser) {
-        setCurrentUser(prev => prev ? ({ ...prev, plantName: FACTORY_PRESETS[presetId].name }) : null);
-      }
+      
+      setCurrentUser(prev => {
+        if (!prev) return null;
+        
+        // If current user is a demo user switching benchmark presets, update their demo persona
+        const isDemoUser = ['Dr. Rajesh Sharma', 'Ananya Patel', 'Vikram Singhania'].includes(prev.name) ||
+                           prev.id.startsWith('DEMO');
+        
+        if (isDemoUser) {
+          const demoPersonaMap: Record<string, { name: string; role: string }> = {
+            DEMO001: { name: 'Dr. Rajesh Sharma', role: 'Chief Sustainability Officer' },
+            DEMO002: { name: 'Ananya Patel', role: 'Lead Process & Decarbonization Engineer' },
+            DEMO003: { name: 'Vikram Singhania', role: 'Plant Technical Director' },
+          };
+          const persona = demoPersonaMap[presetId] || { name: prev.name, role: prev.role };
+          const updated = {
+            ...prev,
+            id: presetId,
+            name: persona.name,
+            role: persona.role,
+            plantName: newPreset.name
+          };
+          try {
+            localStorage.setItem('ecovision_current_user', JSON.stringify(updated));
+          } catch {}
+          return updated;
+        }
+
+        const updated = { ...prev, plantName: newPreset.name };
+        try {
+          localStorage.setItem('ecovision_current_user', JSON.stringify(updated));
+        } catch {}
+        return updated;
+      });
     }
-  }, [currentUser]);
+  }, []);
 
   const updateWeights = useCallback((weights: Partial<OptimizerWeights>) => {
     setOptimizerWeights(prev => ({
