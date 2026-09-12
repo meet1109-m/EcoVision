@@ -43,6 +43,44 @@ export const LoginPage: React.FC = () => {
   // Demo Accounts Popup Box State
   const [isDemoPopupOpen, setIsDemoPopupOpen] = useState(false);
 
+  // Password Complexity & Strength Evaluation
+  const passHasMinLength = password.length >= 8;
+  const passHasNumber = /\d/.test(password);
+  const passHasSpecial = /[^a-zA-Z0-9]/.test(password);
+  const isPasswordStrong = passHasMinLength && passHasNumber && passHasSpecial;
+
+  let passwordStrengthScore = 0;
+  if (passHasMinLength) passwordStrengthScore++;
+  if (passHasNumber) passwordStrengthScore++;
+  if (passHasSpecial) passwordStrengthScore++;
+
+  let strengthLabel = 'Weak';
+  let strengthBarWidth = '33%';
+  let strengthBarColor = 'bg-rose-500 shadow-rose-500/50';
+  let strengthBadgeBg = 'bg-rose-500/10 text-rose-400 border-rose-500/30';
+
+  if (!password) {
+    strengthLabel = 'Required';
+    strengthBarWidth = '0%';
+    strengthBarColor = 'bg-slate-700';
+    strengthBadgeBg = 'bg-slate-800 text-slate-400 border-slate-700';
+  } else if (isPasswordStrong) {
+    strengthLabel = 'Strong';
+    strengthBarWidth = '100%';
+    strengthBarColor = 'bg-emerald-500 shadow-emerald-500/50';
+    strengthBadgeBg = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30';
+  } else if (passwordStrengthScore >= 2 || password.length >= 6) {
+    strengthLabel = 'Medium';
+    strengthBarWidth = '66%';
+    strengthBarColor = 'bg-amber-500 shadow-amber-500/50';
+    strengthBadgeBg = 'bg-amber-500/10 text-amber-400 border-amber-500/30';
+  } else {
+    strengthLabel = 'Weak';
+    strengthBarWidth = '33%';
+    strengthBarColor = 'bg-rose-500 shadow-rose-500/50';
+    strengthBadgeBg = 'bg-rose-500/10 text-rose-400 border-rose-500/30';
+  }
+
   // Handle Sign In submission with real authentication validation
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,8 +164,24 @@ export const LoginPage: React.FC = () => {
       setErrorMsg('Please enter a valid work email address.');
       return;
     }
-    if (!password || password.length < 6) {
-      setErrorMsg('Password must be at least 6 characters.');
+    if (!password) {
+      setErrorMsg('Please create a password.');
+      return;
+    }
+    if (!passHasMinLength) {
+      setErrorMsg('Password must be at least 8 characters long.');
+      return;
+    }
+    if (!passHasNumber) {
+      setErrorMsg('Password must contain at least 1 number (0-9).');
+      return;
+    }
+    if (!passHasSpecial) {
+      setErrorMsg('Password must contain at least 1 special character (!@#$%...).');
+      return;
+    }
+    if (!isPasswordStrong) {
+      setErrorMsg('Password must be Strong before you can sign up.');
       return;
     }
 
@@ -538,9 +592,16 @@ export const LoginPage: React.FC = () => {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-300 mb-1">
-                    Create Password
-                  </label>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-xs font-semibold text-slate-300">
+                      Create Password
+                    </label>
+                    {password && (
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${strengthBadgeBg}`}>
+                        {strengthLabel} Password
+                      </span>
+                    )}
+                  </div>
                   <div className="relative">
                     <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                       <Lock className="w-4 h-4" />
@@ -549,18 +610,48 @@ export const LoginPage: React.FC = () => {
                       type="password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Minimum 6 characters"
+                      placeholder="Req. 8+ chars, 1 number, 1 special char"
                       className="w-full pl-9 pr-3 py-2 bg-slate-950/70 border border-slate-700/80 rounded-xl text-xs text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
                     />
+                  </div>
+
+                  {/* Password Strength Color Line & Criteria Checklist */}
+                  <div className="mt-2 space-y-1.5">
+                    <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full transition-all duration-300 ${strengthBarColor}`}
+                        style={{ width: strengthBarWidth }}
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-1 pt-1 text-[10px]">
+                      <div className={`flex items-center gap-1 ${passHasMinLength ? 'text-emerald-400 font-medium' : 'text-slate-500'}`}>
+                        {passHasMinLength ? <CheckCircle2 className="w-3 h-3 text-emerald-400" /> : <AlertCircle className="w-3 h-3 text-slate-600" />}
+                        <span>8+ Chars</span>
+                      </div>
+                      <div className={`flex items-center gap-1 ${passHasNumber ? 'text-emerald-400 font-medium' : 'text-slate-500'}`}>
+                        {passHasNumber ? <CheckCircle2 className="w-3 h-3 text-emerald-400" /> : <AlertCircle className="w-3 h-3 text-slate-600" />}
+                        <span>1+ Number</span>
+                      </div>
+                      <div className={`flex items-center gap-1 ${passHasSpecial ? 'text-emerald-400 font-medium' : 'text-slate-500'}`}>
+                        {passHasSpecial ? <CheckCircle2 className="w-3 h-3 text-emerald-400" /> : <AlertCircle className="w-3 h-3 text-slate-600" />}
+                        <span>1+ Special</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 <button
                   type="submit"
-                  disabled={isLoading}
-                  className="w-full py-2.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white rounded-xl text-xs font-bold tracking-wide shadow-lg shadow-emerald-600/25 transition-all disabled:opacity-50"
+                  disabled={isLoading || !isPasswordStrong}
+                  className={`w-full py-2.5 px-4 text-white rounded-xl text-xs font-bold tracking-wide shadow-lg transition-all flex items-center justify-center gap-2 ${
+                    isPasswordStrong
+                      ? 'bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 shadow-emerald-600/25 active:scale-[0.98]'
+                      : 'bg-slate-800 text-slate-400 border border-slate-700/60 opacity-60 cursor-not-allowed shadow-none'
+                  }`}
                 >
                   <span>{isLoading ? 'Creating Account...' : 'REGISTER & ACCESS ECOVISION'}</span>
+                  {isPasswordStrong && <ArrowRight className="w-4 h-4" />}
                 </button>
               </form>
             )}

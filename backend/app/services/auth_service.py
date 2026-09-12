@@ -1,4 +1,5 @@
 import datetime
+import re
 from typing import Optional
 import bcrypt
 import jwt
@@ -63,6 +64,24 @@ def authenticate_user(db: Session, identifier: str, password: str) -> Optional[U
 
 
 def register_user(db: Session, user_in: UserRegister) -> User:
+    # Validate password complexity
+    pwd = user_in.password or ""
+    if len(pwd) < 6:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must be at least 6 characters long."
+        )
+    if not re.search(r"\d", pwd):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must contain at least 1 number."
+        )
+    if not re.search(r"[^a-zA-Z0-9]", pwd):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Password must contain at least 1 special character."
+        )
+
     existing = db.query(User).filter(User.email == user_in.email).first()
     if existing:
         raise HTTPException(

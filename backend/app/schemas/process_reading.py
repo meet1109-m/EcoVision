@@ -10,41 +10,41 @@ class ReadingFeatureInput(BaseModel):
     leak_location, leak_severity, confirmed_by) to prevent data leakage.
     """
     timestamp: datetime = Field(default_factory=datetime.utcnow)
-    plant_id: str
-    process_unit_id: str
-    equipment_id: str
-    equipment_type: str
-    process_type: str
+    plant_id: str = "PLANT-A"
+    process_unit_id: str = "UNIT-01"
+    equipment_id: str = "EQ-001"
+    equipment_type: str = "Reactor"
+    process_type: str = "Refining"
 
-    temperature_c: float
-    pressure_bar: float
-    flow_rate: float
-    production_rate: float
-    operating_hours: float
-    equipment_age_years: float
+    temperature_c: float = 185.0
+    pressure_bar: float = 14.2
+    flow_rate: float = 130.0
+    production_rate: float = 80.0
+    operating_hours: float = 15000.0
+    equipment_age_years: float = 12.0
     maintenance_due: bool = False
 
-    co2_ppm: float
-    co_ppm: float
-    nox_ppm: float
-    so2_ppm: float
-    voc_ppm: float
-    ch4_ppm: float
-    pm25_mg_m3: float
+    co2_ppm: float = 4800.0
+    co_ppm: float = 18.5
+    nox_ppm: float = 52.0
+    so2_ppm: float = 22.0
+    voc_ppm: float = 12.5
+    ch4_ppm: float = 3.2
+    pm25_mg_m3: float = 14.0
 
-    fuel_or_material_type: str
-    ambient_temperature_c: float
-    humidity_pct: float
-    wind_speed_m_s: float
-    shift: str
-    maintenance_status: str
+    fuel_or_material_type: str = "NaturalGas"
+    ambient_temperature_c: float = 32.0
+    humidity_pct: float = 55.0
+    wind_speed_m_s: float = 3.2
+    shift: str = "Morning"
+    maintenance_status: str = "Normal"
 
-    pressure_deviation_pct: float
-    flow_deviation_pct: float
-    temperature_deviation_pct: float
-    emission_above_baseline_pct: float
-    rolling_mean: float
-    rolling_std: float
+    pressure_deviation_pct: float = 0.0
+    flow_deviation_pct: float = 0.0
+    temperature_deviation_pct: float = 0.0
+    emission_above_baseline_pct: float = 0.0
+    rolling_mean: float = 0.0
+    rolling_std: float = 0.0
 
     @model_validator(mode="before")
     @classmethod
