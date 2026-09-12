@@ -5,10 +5,10 @@
 @layer base {
   :root {
     --primary-bg: #F5F7FA;
-    --card-bg: rgba(255, 255, 255, 0.88);
-    --border-color: #E2E8F0;
+    --card-bg: #e5e7eb;
+    --border-color: #d1d5db;
     --text-primary: #0F172A;
-    --text-secondary: #64748B;
+    --text-secondary: #475569;
     --color-cyan: #0284C7;
     --color-emerald: #059669;
     --color-amber: #D97706;
@@ -24,45 +24,45 @@
   }
 }
 
-/* Custom Industrial Light Theme Utility Classes - Matched with Header Bar */
+/* Custom Industrial Light Theme Utility Classes - #e5e7eb Cards */
 .acrylic-card {
-  background: rgba(255, 255, 255, 0.70);
+  background: #e5e7eb;
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1.5px solid rgba(255, 255, 255, 0.85);
-  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.05), inset 0 1px 1px 0 rgba(255, 255, 255, 0.95);
+  border: 1.5px solid #d1d5db;
+  box-shadow: 0 4px 16px -2px rgba(15, 23, 42, 0.05), inset 0 1px 1px 0 rgba(255, 255, 255, 0.6);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .acrylic-card:hover {
-  background: rgba(255, 255, 255, 0.82);
-  border-color: rgba(255, 255, 255, 0.95);
-  box-shadow: 0 6px 20px -2px rgba(15, 23, 42, 0.08), inset 0 1px 1px 0 rgba(255, 255, 255, 1);
+  background: #e5e7eb;
+  border-color: #9ca3af;
+  box-shadow: 0 6px 20px -2px rgba(15, 23, 42, 0.08), inset 0 1px 1px 0 rgba(255, 255, 255, 0.7);
 }
 
 .acrylic-card-solid {
-  background: rgba(255, 255, 255, 0.80);
+  background: #e5e7eb;
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1.5px solid rgba(255, 255, 255, 0.88);
-  box-shadow: 0 4px 14px -2px rgba(15, 23, 42, 0.05), inset 0 1px 1px 0 rgba(255, 255, 255, 0.95);
+  border: 1.5px solid #d1d5db;
+  box-shadow: 0 4px 14px -2px rgba(15, 23, 42, 0.05), inset 0 1px 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .acrylic-banner {
-  background: rgba(255, 255, 255, 0.70);
+  background: #e5e7eb;
   backdrop-filter: blur(20px) saturate(180%);
   -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1.5px solid rgba(255, 255, 255, 0.85);
-  box-shadow: 0 4px 14px -2px rgba(15, 23, 42, 0.05), inset 0 1px 1px 0 rgba(255, 255, 255, 0.95);
+  border: 1.5px solid #d1d5db;
+  box-shadow: 0 4px 14px -2px rgba(15, 23, 42, 0.05), inset 0 1px 1px 0 rgba(255, 255, 255, 0.6);
   border-radius: 20px;
 }
 
 .acrylic-capsule {
-  background: rgba(255, 255, 255, 0.75);
+  background: #e5e7eb;
   backdrop-filter: blur(16px) saturate(160%);
   -webkit-backdrop-filter: blur(16px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.88);
-  box-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.04), inset 0 1px 1px 0 rgba(255, 255, 255, 0.9);
+  border: 1px solid #d1d5db;
+  box-shadow: 0 2px 8px -2px rgba(15, 23, 42, 0.04), inset 0 1px 1px 0 rgba(255, 255, 255, 0.6);
 }
 
 .acrylic-input {
