@@ -34,6 +34,7 @@ interface AppContextType {
   simulationResult: SimulationResult;
   isAnalyzing: boolean;
   analysisStepIndex: number;
+  sidebarOpen: boolean;
   sidebarCollapsed: boolean;
   latestMLPrediction: PredictResponse | null;
   isMLPredicting: boolean;
@@ -42,6 +43,8 @@ interface AppContextType {
   // Actions
   login: (customerIdOrEmail?: string, customUser?: Partial<User>) => void;
   logout: () => void;
+  setSidebarOpen: (open: boolean) => void;
+  toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   updateProfile: (updates: Partial<FactoryProfile>) => void;
   loadPreset: (presetId: string) => void;
@@ -145,7 +148,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [whatIfScenario, setWhatIfScenario] = useState<WhatIfScenario>(defaultWhatIf);
   const [isAnalyzing, setIsAnalyzing] = useState<boolean>(false);
   const [analysisStepIndex, setAnalysisStepIndex] = useState<number>(0);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState<boolean>(false);
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+
+  const toggleSidebar = () => setSidebarOpen(prev => !prev);
+  const setSidebarCollapsed = (collapsed: boolean) => setSidebarOpen(!collapsed);
+  const sidebarCollapsed = !sidebarOpen;
   const [actionPlanOverrides, setActionPlanOverrides] = useState<Record<string, ActionPlanItem['status']>>({});
   
   // Real ML Prediction state
@@ -438,12 +445,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         simulationResult,
         isAnalyzing,
         analysisStepIndex,
+        sidebarOpen,
         sidebarCollapsed,
         latestMLPrediction,
         isMLPredicting,
         selectedRecommendationForCalculator,
         login,
         logout,
+        setSidebarOpen,
+        toggleSidebar,
         setSidebarCollapsed,
         updateProfile,
         loadPreset,

@@ -19,7 +19,8 @@ export const Header: React.FC = () => {
     factoryProfile, 
     triggerAIAnalysis, 
     isAnalyzing, 
-    setSidebarCollapsed, 
+    sidebarOpen,
+    toggleSidebar, 
     simulationResult,
     activeTab,
     setActiveTab
@@ -43,31 +44,34 @@ export const Header: React.FC = () => {
   }, []);
 
   return (
-    <header className="sticky top-0 z-30 bg-white/50 backdrop-blur-xl border-b border-white/60 px-6 py-3 shadow-sm">
-      <div className="flex items-center justify-between gap-4">
-        {/* Left: Mobile Toggle & Context Breadcrumb */}
-        <div className="flex items-center gap-3">
+    <header className="sticky top-0 z-30 bg-white/70 backdrop-blur-xl border-b border-white/80 px-4 sm:px-6 py-3 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        {/* Left: Navbar Icon Toggle & Context Breadcrumb */}
+        <div className="flex items-center gap-3 min-w-0">
           <button
             type="button"
-            onClick={() => setSidebarCollapsed(true)}
-            className="lg:hidden p-2 rounded-xl text-slate-600 hover:text-slate-900 bg-white/70 border border-white/80"
+            onClick={toggleSidebar}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800 border border-slate-700/80 shadow-md shadow-slate-900/20 transition-all active:scale-95 group cursor-pointer flex-shrink-0"
+            title="Toggle Navigation Menu"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-4 h-4 text-emerald-400 group-hover:rotate-90 transition-transform duration-300" />
+            <span className="text-xs font-extrabold tracking-wide hidden sm:inline">Navbar Menu</span>
+            <span className={`w-2 h-2 rounded-full transition-colors ${sidebarOpen ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
           </button>
 
-          <div className="hidden sm:flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-white/70 backdrop-blur-md border border-white/80 shadow-sm text-xs">
-            <Building2 className="w-4 h-4 text-emerald-600" />
-            <span className="font-bold text-slate-900">{factoryProfile.name}</span>
+          <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/80 backdrop-blur-md border border-white/90 shadow-sm text-xs max-w-xs truncate">
+            <Building2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
+            <span className="font-bold text-slate-900 truncate">{factoryProfile.name}</span>
             <span className="text-slate-300">/</span>
-            <span className="text-slate-600 font-medium">{factoryProfile.location}</span>
+            <span className="text-slate-500 font-medium truncate">{factoryProfile.location}</span>
           </div>
         </div>
 
         {/* Right: Telemetry status, AI Trigger, Notification bell, Export */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
           {/* Live Telemetry & Backend Status Badge */}
-          <div className="hidden md:flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/70 backdrop-blur-md border border-white/80 shadow-sm text-xs text-slate-700">
-            <span className={`w-2.5 h-2.5 rounded-full ${backendHealth?.status === 'ok' ? 'bg-emerald-500 animate-pulse' : 'bg-emerald-500'}`} />
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/80 backdrop-blur-md border border-white/90 shadow-sm text-xs text-slate-700 whitespace-nowrap">
+            <span className={`w-2 h-2 rounded-full ${backendHealth?.status === 'ok' ? 'bg-emerald-500 animate-pulse' : 'bg-emerald-500'}`} />
             <span className="font-semibold">
               {backendHealth?.status === 'ok' ? 'API Online' : 'Sensors: 18 Online'}
             </span>

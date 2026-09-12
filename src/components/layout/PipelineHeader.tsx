@@ -61,52 +61,47 @@ export const PipelineHeader: React.FC = () => {
         </div>
       </div>
 
-      {/* Horizontal Pipeline Workflow */}
-      <div className="mt-4 overflow-x-auto pb-1">
-        <div className="flex items-center justify-between min-w-[760px] gap-2">
+      {/* 7-Stage Pipeline Workflow Grid */}
+      <div className="mt-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
           {PIPELINE_STAGES.map((stage, idx) => {
             const isActive = activePipelineStage === stage.id;
             const isPassed = PIPELINE_STAGES.findIndex(s => s.id === activePipelineStage) > idx;
 
             return (
-              <React.Fragment key={stage.id}>
-                <button
-                  type="button"
-                  onClick={() => handleStageClick(stage)}
-                  className={`flex-1 flex flex-col items-start text-left p-3 rounded-xl transition-all relative border ${
-                    isActive
-                      ? 'bg-sky-50 border-sky-400 text-sky-950 shadow-sm ring-2 ring-sky-400/20'
-                      : isPassed
-                      ? 'bg-slate-50/80 border-slate-200 text-slate-700 hover:bg-slate-100'
-                      : 'bg-white/70 border-slate-200/70 text-slate-400 hover:bg-slate-50'
-                  }`}
-                >
-                  <div className="flex items-center justify-between w-full mb-1">
-                    <span className={`text-[10px] font-mono font-bold tracking-wider px-1.5 py-0.5 rounded ${
-                      isActive 
-                        ? 'bg-sky-600 text-white' 
-                        : isPassed 
-                        ? 'bg-emerald-600 text-white' 
-                        : 'bg-slate-200 text-slate-600'
-                    }`}>
-                      {stage.num}
-                    </span>
-                    {isActive && (
-                      <span className="w-2 h-2 rounded-full bg-sky-500 animate-ping" />
-                    )}
-                  </div>
-                  <span className={`text-xs font-bold tracking-wide ${isActive ? 'text-sky-900' : 'text-slate-800'}`}>
-                    {stage.label}
+              <button
+                key={stage.id}
+                type="button"
+                onClick={() => handleStageClick(stage)}
+                className={`flex flex-col items-start text-left p-3 rounded-xl transition-all relative border ${
+                  isActive
+                    ? 'bg-sky-50 border-sky-400 text-sky-950 shadow-sm ring-2 ring-sky-400/20'
+                    : isPassed
+                    ? 'bg-slate-50/80 border-slate-200 text-slate-700 hover:bg-slate-100'
+                    : 'bg-white/70 border-slate-200/70 text-slate-400 hover:bg-slate-50'
+                }`}
+              >
+                <div className="flex items-center justify-between w-full mb-1">
+                  <span className={`text-[10px] font-mono font-bold tracking-wider px-1.5 py-0.5 rounded ${
+                    isActive 
+                      ? 'bg-sky-600 text-white' 
+                      : isPassed 
+                      ? 'bg-emerald-600 text-white' 
+                      : 'bg-slate-200 text-slate-600'
+                  }`}>
+                    {stage.num}
                   </span>
-                  <span className="text-[10px] text-slate-500 truncate max-w-full">
-                    {stage.sublabel}
-                  </span>
-                </button>
-
-                {idx < PIPELINE_STAGES.length - 1 && (
-                  <ChevronRight className="w-4 h-4 text-slate-300 flex-shrink-0" />
-                )}
-              </React.Fragment>
+                  {isActive && (
+                    <span className="w-2 h-2 rounded-full bg-sky-500 animate-ping" />
+                  )}
+                </div>
+                <span className={`text-xs font-bold tracking-wide truncate max-w-full ${isActive ? 'text-sky-900' : 'text-slate-800'}`}>
+                  {stage.label}
+                </span>
+                <span className="text-[10px] text-slate-500 truncate max-w-full">
+                  {stage.sublabel}
+                </span>
+              </button>
             );
           })}
         </div>
