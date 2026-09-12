@@ -333,14 +333,24 @@ export const LoginPage: React.FC = () => {
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setViewStage('login')}
-            className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all border border-white/20 backdrop-blur-md flex items-center gap-2 shadow-sm active:scale-95"
-          >
-            <span>Sign In</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+          <div className="flex items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => { setViewStage('login'); setAuthMode('login'); setErrorMsg(null); }}
+              className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all border border-white/20 backdrop-blur-md flex items-center gap-2 shadow-sm active:scale-95 cursor-pointer"
+            >
+              <span>Sign In</span>
+              <ArrowRight className="w-3.5 h-3.5 text-emerald-400" />
+            </button>
+            <button
+              type="button"
+              onClick={() => { setViewStage('login'); setAuthMode('signup'); setErrorMsg(null); }}
+              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white text-xs font-extrabold transition-all shadow-md shadow-emerald-600/30 active:scale-95 flex items-center gap-2 cursor-pointer"
+            >
+              <span>Sign Up</span>
+              <User className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </header>
 
         {/* Center: Headline & Revolving 3D Earth */}
@@ -352,7 +362,7 @@ export const LoginPage: React.FC = () => {
               <span>Next-Gen Decarbonization Decision Support</span>
             </div>
 
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.12]">
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.12]">
               Detect. Localize.<br />
               Explain. Optimize.<br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400">
@@ -360,14 +370,14 @@ export const LoginPage: React.FC = () => {
               </span>
             </h1>
 
-            <p className="text-sm sm:text-base text-slate-300 max-w-xl leading-relaxed">
+            <p className="text-xs sm:text-base text-slate-300 max-w-xl leading-relaxed">
               Transform fragmented factory operational, energy, material, and waste information into actionable decarbonization and leak mitigation decisions.
             </p>
 
             {/* 3 Impact Indicators on Landing */}
-            <div className="grid grid-cols-3 gap-3 pt-4 border-t border-slate-700/60 max-w-lg mx-auto lg:mx-0">
-              <div className="bg-slate-900/70 rounded-xl p-3 border border-slate-700/80 backdrop-blur-md">
-                <div className="flex items-center gap-1 text-emerald-400 text-xs font-bold mb-1">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-4 border-t border-slate-700/60 max-w-lg mx-auto lg:mx-0">
+              <div className="bg-slate-900/70 rounded-xl p-3 border border-slate-700/80 backdrop-blur-md flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2">
+                <div className="flex items-center gap-1 text-emerald-400 text-xs font-bold">
                   <TrendingDown className="w-3.5 h-3.5" />
                   <span>↓ 38.7%</span>
                 </div>
@@ -376,8 +386,8 @@ export const LoginPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-slate-900/70 rounded-xl p-3 border border-slate-700/80 backdrop-blur-md">
-                <div className="flex items-center gap-1 text-sky-400 text-xs font-bold mb-1">
+              <div className="bg-slate-900/70 rounded-xl p-3 border border-slate-700/80 backdrop-blur-md flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2">
+                <div className="flex items-center gap-1 text-sky-400 text-xs font-bold">
                   <TrendingUp className="w-3.5 h-3.5" />
                   <span>↑ 24.5%</span>
                 </div>
@@ -386,8 +396,8 @@ export const LoginPage: React.FC = () => {
                 </div>
               </div>
 
-              <div className="bg-slate-900/70 rounded-xl p-3 border border-slate-700/80 backdrop-blur-md">
-                <div className="flex items-center gap-1 text-cyan-300 text-xs font-bold mb-1">
+              <div className="bg-slate-900/70 rounded-xl p-3 border border-slate-700/80 backdrop-blur-md flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2">
+                <div className="flex items-center gap-1 text-cyan-300 text-xs font-bold">
                   <Sparkles className="w-3.5 h-3.5" />
                   <span>94/100</span>
                 </div>
@@ -411,15 +421,25 @@ export const LoginPage: React.FC = () => {
             <span>Industrial Emission Intelligence & Cost Analysis Platform</span>
           </div>
 
-          {/* REQUIRED BOTTOM LOGIN BUTTON */}
-          <button
-            type="button"
-            onClick={() => setViewStage('login')}
-            className="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-sky-600 hover:from-emerald-600 hover:via-teal-600 hover:to-sky-700 text-white font-extrabold text-sm tracking-wide shadow-xl shadow-emerald-500/25 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-3"
-          >
-            <span>ENTER ECOVISION WORKSPACE (LOGIN)</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
+          {/* REQUIRED BOTTOM ACTION BUTTONS */}
+          <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => { setViewStage('login'); setAuthMode('login'); setErrorMsg(null); }}
+              className="flex-1 sm:flex-initial px-6 py-3 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-sky-600 hover:from-emerald-600 hover:via-teal-600 hover:to-sky-700 text-white font-extrabold text-xs tracking-wider uppercase shadow-xl shadow-emerald-500/25 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>SIGN IN TO WORKSPACE</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => { setViewStage('login'); setAuthMode('signup'); setErrorMsg(null); }}
+              className="flex-1 sm:flex-initial px-6 py-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 text-emerald-300 font-extrabold text-xs tracking-wider uppercase border border-emerald-500/40 shadow-xl transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <span>CREATE ACCOUNT (SIGN UP)</span>
+              <User className="w-4 h-4" />
+            </button>
+          </div>
         </footer>
       </div>
     );

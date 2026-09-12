@@ -88,7 +88,7 @@ export const FactoryProfileView: React.FC = () => {
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
       {/* Page Header & Preset Bar */}
-      <div className="acrylic-card rounded-2xl p-6 border border-slate-200">
+      <div className="acrylic-card rounded-2xl p-6 border border-white/80 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
@@ -139,7 +139,7 @@ export const FactoryProfileView: React.FC = () => {
         {/* ========================================================================= */}
         {/* SECTION 1: PROCESS INFORMATION                                           */}
         {/* ========================================================================= */}
-        <div className="acrylic-card rounded-2xl p-6 border border-slate-200">
+        <div className="acrylic-card rounded-2xl p-6 border border-white/80 shadow-sm">
           <div className="flex items-center gap-3 pb-4 mb-5 border-b border-slate-200">
             <div className="w-9 h-9 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center">
               <Factory className="w-5 h-5" />
@@ -277,7 +277,7 @@ export const FactoryProfileView: React.FC = () => {
         {/* ========================================================================= */}
         {/* SECTION 2: ENERGY INFORMATION                                            */}
         {/* ========================================================================= */}
-        <div className="acrylic-card rounded-2xl p-6 border border-slate-200">
+        <div className="acrylic-card rounded-2xl p-6 border border-white/80 shadow-sm">
           <div className="flex items-center gap-3 pb-4 mb-5 border-b border-slate-200">
             <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center">
               <Zap className="w-5 h-5" />
@@ -409,7 +409,7 @@ export const FactoryProfileView: React.FC = () => {
         {/* ========================================================================= */}
         {/* SECTION 3: MATERIAL INFORMATION                                          */}
         {/* ========================================================================= */}
-        <div className="acrylic-card rounded-2xl p-6 border border-slate-200">
+        <div className="acrylic-card rounded-2xl p-6 border border-white/80 shadow-sm">
           <div className="flex items-center gap-3 pb-4 mb-5 border-b border-slate-200">
             <div className="w-9 h-9 rounded-xl bg-cyan-100 text-cyan-700 flex items-center justify-center">
               <Layers className="w-5 h-5" />
@@ -531,7 +531,7 @@ export const FactoryProfileView: React.FC = () => {
         {/* ========================================================================= */}
         {/* SECTION 4: WASTE INFORMATION                                             */}
         {/* ========================================================================= */}
-        <div className="acrylic-card rounded-2xl p-6 border border-slate-200">
+        <div className="acrylic-card rounded-2xl p-6 border border-white/80 shadow-sm">
           <div className="flex items-center gap-3 pb-4 mb-5 border-b border-slate-200">
             <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center">
               <Trash2 className="w-5 h-5" />

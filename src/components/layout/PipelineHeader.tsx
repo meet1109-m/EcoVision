@@ -30,7 +30,7 @@ export const PipelineHeader: React.FC = () => {
   };
 
   return (
-    <div className="acrylic-card rounded-2xl p-5 mb-6 border border-slate-200 shadow-sm">
+    <div className="acrylic-card rounded-2xl p-5 mb-6 border border-white/80 shadow-sm">
       {/* Top Title & Badges Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-200/80">
         <div>

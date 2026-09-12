@@ -46,20 +46,38 @@ export const Header: React.FC = () => {
   return (
     <header className="sticky top-0 z-30 bg-white/70 backdrop-blur-xl border-b border-white/80 px-4 sm:px-6 py-3 shadow-sm">
       <div className="flex items-center justify-between gap-3">
-        {/* Left: Navbar Icon Toggle & Context Breadcrumb */}
+        {/* Left: 3-Lines Navbar Icon, Logo & Web Name, Context Breadcrumb */}
         <div className="flex items-center gap-3 min-w-0">
+          {/* 3-Lines Hamburger Navbar Icon Button */}
           <button
             type="button"
             onClick={toggleSidebar}
-            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800 border border-slate-700/80 shadow-md shadow-slate-900/20 transition-all active:scale-95 group cursor-pointer flex-shrink-0"
+            className="p-2 rounded-xl bg-slate-900 text-white hover:bg-slate-800 border border-slate-700/80 shadow-sm transition-all active:scale-95 flex-shrink-0 cursor-pointer"
             title="Toggle Navigation Menu"
           >
-            <Menu className="w-4 h-4 text-emerald-400 group-hover:rotate-90 transition-transform duration-300" />
-            <span className="text-xs font-extrabold tracking-wide hidden sm:inline">Navbar Menu</span>
-            <span className={`w-2 h-2 rounded-full transition-colors ${sidebarOpen ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`} />
+            <Menu className="w-5 h-5 text-emerald-400" />
           </button>
 
-          <div className="hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/80 backdrop-blur-md border border-white/90 shadow-sm text-xs max-w-xs truncate">
+          {/* Web Name & Logo */}
+          <div className="flex items-center gap-2.5 flex-shrink-0 cursor-pointer" onClick={() => setActiveTab('overview')}>
+            <img 
+              src="/ecovision_logo.png" 
+              alt="EcoVision" 
+              className="w-8 h-8 rounded-xl object-contain shadow-sm border border-emerald-500/30 bg-white p-0.5" 
+            />
+            <div className="flex flex-col justify-center">
+              <div className="flex items-center gap-0.5 leading-none">
+                <span className="font-extrabold text-base tracking-tight text-slate-900">Eco</span>
+                <span className="font-extrabold text-base tracking-tight text-emerald-600">Vision</span>
+              </div>
+              <p className="text-[9px] font-bold text-slate-500 uppercase tracking-widest leading-tight hidden sm:block">
+                Industrial Intelligence
+              </p>
+            </div>
+          </div>
+
+          {/* Facility Context Breadcrumb */}
+          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/80 backdrop-blur-md border border-white/90 shadow-sm text-xs max-w-xs truncate">
             <Building2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" />
             <span className="font-bold text-slate-900 truncate">{factoryProfile.name}</span>
             <span className="text-slate-300">/</span>

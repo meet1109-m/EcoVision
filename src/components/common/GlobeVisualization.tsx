@@ -217,21 +217,20 @@ export const GlobeVisualization: React.FC = () => {
   }, []);
 
   return (
-    <div className="relative flex items-center justify-center">
+    <div className="relative flex items-center justify-center w-full my-4 lg:my-0">
       {/* Planetary Outer Aura Glow */}
-      <div className="absolute w-[440px] h-[440px] rounded-full bg-cyan-500/20 blur-3xl pointer-events-none -z-10 animate-pulse" />
+      <div className="absolute w-[280px] h-[280px] sm:w-[400px] sm:h-[400px] md:w-[440px] md:h-[440px] rounded-full bg-cyan-500/20 blur-3xl pointer-events-none -z-10 animate-pulse" />
       
       {/* 3D WebGL Earth Canvas */}
       <canvas
         ref={canvasRef}
-        style={{ width: '480px', height: '480px' }}
-        className="max-w-full drop-shadow-[0_20px_50px_rgba(2,132,199,0.35)] select-none rounded-full"
+        className="w-[290px] h-[290px] sm:w-[420px] sm:h-[420px] md:w-[480px] md:h-[480px] max-w-full drop-shadow-[0_20px_50px_rgba(2,132,199,0.35)] select-none rounded-full"
       />
 
       {/* Real-time Indicator Badge */}
-      <div className="absolute bottom-2 text-center pointer-events-none">
-        <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-950/80 text-sky-200 backdrop-blur-md border border-sky-400/40 shadow-lg">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+      <div className="absolute bottom-1 sm:bottom-2 text-center pointer-events-none">
+        <span className="inline-flex items-center gap-1.5 px-3 py-1 sm:px-3.5 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-semibold bg-slate-950/80 text-sky-200 backdrop-blur-md border border-sky-400/40 shadow-lg">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
           <span>Planet Earth Decarbonization Grid • Live 3D Stream</span>
         </span>
       </div>

@@ -73,7 +73,7 @@ export const WhatIfSimulatorView: React.FC = () => {
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
       {/* Header Banner */}
-      <div className="acrylic-card rounded-2xl p-6 border border-slate-200 shadow-sm">
+      <div className="acrylic-card rounded-2xl p-6 border border-white/80 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
@@ -127,7 +127,7 @@ export const WhatIfSimulatorView: React.FC = () => {
       {/* Comparison Delta KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Estimated Daily Emissions */}
-        <div className="acrylic-card rounded-2xl p-5 border border-slate-200 shadow-sm">
+        <div className="acrylic-card rounded-2xl p-5 border border-white/80 shadow-sm">
           <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
             Estimated Daily Emissions
           </div>
@@ -146,7 +146,7 @@ export const WhatIfSimulatorView: React.FC = () => {
         </div>
 
         {/* Emission Risk Index */}
-        <div className="acrylic-card rounded-2xl p-5 border border-slate-200 shadow-sm">
+        <div className="acrylic-card rounded-2xl p-5 border border-white/80 shadow-sm">
           <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
             Emission Risk Index
           </div>
@@ -167,7 +167,7 @@ export const WhatIfSimulatorView: React.FC = () => {
         </div>
 
         {/* Circularity Score */}
-        <div className="acrylic-card rounded-2xl p-5 border border-slate-200 shadow-sm">
+        <div className="acrylic-card rounded-2xl p-5 border border-white/80 shadow-sm">
           <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
             Circularity Score
           </div>
@@ -188,7 +188,7 @@ export const WhatIfSimulatorView: React.FC = () => {
         </div>
 
         {/* Estimated Annual OPEX Savings */}
-        <div className="acrylic-card rounded-2xl p-5 border border-slate-200 shadow-sm">
+        <div className="acrylic-card rounded-2xl p-5 border border-white/80 shadow-sm">
           <div className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
             Est. Annual Cost Benefit
           </div>
@@ -209,7 +209,7 @@ export const WhatIfSimulatorView: React.FC = () => {
       {/* Simulator Sliders & Side-by-side Chart */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Sliders (7 cols) */}
-        <div className="lg:col-span-7 acrylic-card rounded-2xl p-6 border border-slate-200 shadow-sm space-y-4">
+        <div className="lg:col-span-7 acrylic-card rounded-2xl p-6 border border-white/80 shadow-sm space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-200">
             <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
               <Sliders className="w-4 h-4 text-sky-600" />
@@ -330,7 +330,7 @@ export const WhatIfSimulatorView: React.FC = () => {
         </div>
 
         {/* Side-by-Side Scenario Chart (5 cols) */}
-        <div className="lg:col-span-5 acrylic-card rounded-2xl p-6 border border-slate-200 shadow-sm flex flex-col justify-between">
+        <div className="lg:col-span-5 acrylic-card rounded-2xl p-6 border border-white/80 shadow-sm flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between pb-3 border-b border-slate-200">
               <h3 className="font-bold text-sm text-slate-900">

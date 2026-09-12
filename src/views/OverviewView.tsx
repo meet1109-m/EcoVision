@@ -125,7 +125,7 @@ export const OverviewView: React.FC = () => {
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
       {/* Executive Welcome Card */}
-      <div className="acrylic-card rounded-2xl p-6 border border-slate-200 shadow-sm">
+      <div className="acrylic-card rounded-2xl p-6 border border-white/80 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2 flex-wrap">
@@ -215,7 +215,7 @@ export const OverviewView: React.FC = () => {
       {/* 4 Executive KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* KPI 1: Emission Risk Index */}
-        <div className="acrylic-card rounded-2xl p-5 border border-slate-200 shadow-sm">
+        <div className="acrylic-card rounded-2xl p-5 border border-white/80 shadow-sm">
           <div className="flex items-center justify-between text-slate-500 mb-1">
             <span className="text-xs font-bold uppercase tracking-wider">Emission Risk Index</span>
             <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
@@ -237,7 +237,7 @@ export const OverviewView: React.FC = () => {
         </div>
 
         {/* KPI 2: Active Hotspots */}
-        <div className="acrylic-card rounded-2xl p-5 border border-slate-200 shadow-sm">
+        <div className="acrylic-card rounded-2xl p-5 border border-white/80 shadow-sm">
           <div className="flex items-center justify-between text-slate-500 mb-1">
             <span className="text-xs font-bold uppercase tracking-wider">Active Hotspots</span>
             <Crosshair className="w-4 h-4 text-amber-500" />
@@ -254,7 +254,7 @@ export const OverviewView: React.FC = () => {
         </div>
 
         {/* KPI 3: Potential Reduction */}
-        <div className="acrylic-card rounded-2xl p-5 border border-slate-200 shadow-sm">
+        <div className="acrylic-card rounded-2xl p-5 border border-white/80 shadow-sm">
           <div className="flex items-center justify-between text-slate-500 mb-1">
             <span className="text-xs font-bold uppercase tracking-wider">Potential Reduction</span>
             <TrendingDown className="w-4 h-4 text-emerald-500" />
@@ -271,7 +271,7 @@ export const OverviewView: React.FC = () => {
         </div>
 
         {/* KPI 4: Circularity Score */}
-        <div className="acrylic-card rounded-2xl p-5 border border-slate-200 shadow-sm">
+        <div className="acrylic-card rounded-2xl p-5 border border-white/80 shadow-sm">
           <div className="flex items-center justify-between text-slate-500 mb-1">
             <span className="text-xs font-bold uppercase tracking-wider">Circularity Score</span>
             <Sparkles className="w-4 h-4 text-sky-500" />
