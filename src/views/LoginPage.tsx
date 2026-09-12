@@ -49,13 +49,22 @@ export const LoginPage: React.FC = () => {
     setErrorMsg(null);
     setSuccessMsg(null);
 
+    const trimmedEmail = email.trim();
+
     // Validation: Require email & password
-    if (!email.trim()) {
+    if (!trimmedEmail) {
       setErrorMsg('Please enter your industrial email address or Customer ID.');
       return;
     }
     if (!password || password.length < 6) {
       setErrorMsg('Password must be at least 6 characters long.');
+      return;
+    }
+
+    // 3. Explicit Demo Account Shortcut Path (when explicitly using DEMO001/DEMO002)
+    const normalized = trimmedEmail.toUpperCase();
+    if (normalized === 'DEMO001' || normalized === 'DEMO002') {
+      login(normalized);
       return;
     }
 
@@ -66,38 +75,39 @@ export const LoginPage: React.FC = () => {
       const res = await fetch('/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), password }),
+        body: JSON.stringify({ email: trimmedEmail, password }),
       });
 
       if (res.ok) {
+        // 1. Successful /auth/login response: store token and log in
         const data = await res.json();
         if (data.access_token) {
           localStorage.setItem('ecovision_token', data.access_token);
         }
-        login(email.trim());
+        login(trimmedEmail);
         return;
-      } else if (res.status === 401) {
-        // Check if matching demo credentials or custom user
-        const normalized = email.trim().toUpperCase();
-        if (normalized === 'DEMO001' || normalized.includes('DEMO001') || normalized.includes('GREENTECH')) {
-          login('DEMO001');
-          return;
-        } else if (normalized === 'DEMO002' || normalized.includes('DEMO002') || normalized.includes('FUTURECHEM')) {
-          login('DEMO002');
-          return;
-        } else {
-          setErrorMsg('Invalid credentials. Please verify your email and password, or use 1-Click Demo.');
-          setIsLoading(false);
-          return;
+      } else {
+        // 2. 401 or non-OK response with invalid credentials: show error and DO NOT log in
+        let detailMsg = 'Invalid email or password. Please verify your credentials.';
+        try {
+          const errData = await res.json();
+          if (errData?.detail) {
+            detailMsg = typeof errData.detail === 'string' ? errData.detail : JSON.stringify(errData.detail);
+          }
+        } catch {
+          // JSON parse fallback
         }
+        setErrorMsg(`Authentication Failed: ${detailMsg}`);
+        setIsLoading(false);
+        return;
       }
     } catch {
-      // Offline fallback: allow valid email & password
+      // 4. Genuine network error / offline backend fallback with visible notice
+      setSuccessMsg('Offline Mode Notice: Backend server unreachable. Accessing workspace in local demonstration mode...');
+      setTimeout(() => {
+        login(trimmedEmail);
+      }, 1000);
     }
-
-    // Verified credentials fallback for prototype
-    login(email.trim());
-    setIsLoading(false);
   };
 
   // Handle Sign Up submission
@@ -106,11 +116,13 @@ export const LoginPage: React.FC = () => {
     setErrorMsg(null);
     setSuccessMsg(null);
 
+    const trimmedEmail = email.trim();
+
     if (!fullName.trim()) {
       setErrorMsg('Please enter your full name.');
       return;
     }
-    if (!email.trim() || !email.includes('@')) {
+    if (!trimmedEmail || !trimmedEmail.includes('@')) {
       setErrorMsg('Please enter a valid work email address.');
       return;
     }
@@ -126,7 +138,7 @@ export const LoginPage: React.FC = () => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({
-          email: email.trim(),
+          email: trimmedEmail,
           password,
           full_name: fullName.trim(),
           role: role.toLowerCase().replace(/\s+/g, '_'),
@@ -135,23 +147,35 @@ export const LoginPage: React.FC = () => {
       });
 
       if (res.ok) {
-        setSuccessMsg('Account created successfully! Logging you in...');
+        const data = await res.json().catch(() => ({}));
+        if (data?.access_token) {
+          localStorage.setItem('ecovision_token', data.access_token);
+        }
+        setSuccessMsg('Account created successfully! Accessing workspace...');
         setTimeout(() => {
-          login(email.trim());
+          login(trimmedEmail);
         }, 800);
         return;
       } else {
-        const errData = await res.json();
-        setErrorMsg(errData.detail || 'Registration failed. Email may already be in use.');
+        let detailMsg = 'Registration failed. Email may already be registered.';
+        try {
+          const errData = await res.json();
+          if (errData?.detail) {
+            detailMsg = typeof errData.detail === 'string' ? errData.detail : JSON.stringify(errData.detail);
+          }
+        } catch {
+          // JSON parse fallback
+        }
+        setErrorMsg(`Registration Failed: ${detailMsg}`);
         setIsLoading(false);
         return;
       }
     } catch {
-      // Local fallback
-      setSuccessMsg('Registration verified! Accessing workspace...');
+      // Offline fallback with visible notice
+      setSuccessMsg('Offline Mode Notice: Backend server unreachable. Registering user in local mode...');
       setTimeout(() => {
-        login(email.trim());
-      }, 700);
+        login(trimmedEmail);
+      }, 1000);
     }
   };
 

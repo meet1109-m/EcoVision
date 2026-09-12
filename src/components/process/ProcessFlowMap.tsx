@@ -16,12 +16,19 @@ import {
   HelpCircle,
   X
 } from 'lucide-react';
+import { LiveReadingsPanel } from './LiveReadingsPanel';
 
-export const ProcessFlowMap: React.FC = () => {
+interface ProcessFlowMapProps {
+  hotspotNodes?: HotspotNode[];
+}
+
+export const ProcessFlowMap: React.FC<ProcessFlowMapProps> = ({ hotspotNodes: propNodes }) => {
   const { simulationResult } = useApp();
-  const [selectedNode, setSelectedNode] = useState<HotspotNode>(
-    simulationResult.hotspotNodes.find(n => n.id === 'scrubber') || simulationResult.hotspotNodes[0]
+  const nodes = propNodes && propNodes.length > 0 ? propNodes : simulationResult.hotspotNodes;
+  const [selectedNodeId, setSelectedNodeId] = useState<string>(
+    nodes.find(n => n.id === 'scrubber')?.id || nodes[0]?.id || ''
   );
+  const selectedNode = nodes.find(n => n.id === selectedNodeId) || nodes[0];
 
   const getStatusColor = (status: HotspotNode['status']) => {
     switch (status) {
@@ -91,15 +98,15 @@ export const ProcessFlowMap: React.FC = () => {
       <div className="acrylic-card rounded-2xl p-6 border border-slate-200 overflow-x-auto shadow-sm">
         <div className="min-w-[850px] py-4">
           <div className="grid grid-cols-7 gap-3 items-center relative">
-            {simulationResult.hotspotNodes.map((node, idx) => {
+            {nodes.map((node, idx) => {
               const styles = getStatusColor(node.status);
-              const isSelected = selectedNode.id === node.id;
+              const isSelected = selectedNode?.id === node.id;
 
               return (
                 <div key={node.id} className="relative flex flex-col items-center">
                   <button
                     type="button"
-                    onClick={() => setSelectedNode(node)}
+                    onClick={() => setSelectedNodeId(node.id)}
                     className={`w-full p-4 rounded-xl border text-left transition-all relative ${styles.nodeBorder} ${
                       isSelected ? 'ring-2 ring-sky-500 shadow-lg scale-105 z-10' : 'hover:shadow-md'
                     }`}
@@ -136,7 +143,7 @@ export const ProcessFlowMap: React.FC = () => {
                   </button>
 
                   {/* Flow Arrow */}
-                  {idx < simulationResult.hotspotNodes.length - 1 && (
+                  {idx < nodes.length - 1 && (
                     <div className="hidden lg:block absolute -right-3.5 top-1/2 -translate-y-1/2 z-20 text-slate-400">
                       <ArrowRight className="w-4 h-4 text-slate-400" />
                     </div>
@@ -269,6 +276,9 @@ export const ProcessFlowMap: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Live Backend Telemetry Stream Panel */}
+      <LiveReadingsPanel />
     </div>
   );
 };
