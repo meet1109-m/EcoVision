@@ -1,0 +1,166 @@
+{
+  "model_type": "XGBoostClassifier",
+  "model_version": "xgb-incident-v1.0",
+  "split_strategy": "chronological",
+  "train_samples": 40000,
+  "test_samples": 10000,
+  "train_time_range": [
+    "2026-01-01 00:00:00",
+    "2026-01-19 22:30:00"
+  ],
+  "test_time_range": [
+    "2026-01-19 22:30:00",
+    "2026-01-25 11:15:00"
+  ],
+  "classes": [
+    0,
+    1,
+    2,
+    3
+  ],
+  "class_mapping": {
+    "0": {
+      "name": "normal",
+      "severity": "none",
+      "base_score": 10.0
+    },
+    "1": {
+      "name": "warning",
+      "severity": "low",
+      "base_score": 40.0
+    },
+    "2": {
+      "name": "leak_suspected",
+      "severity": "medium",
+      "base_score": 75.0
+    },
+    "3": {
+      "name": "critical",
+      "severity": "critical",
+      "base_score": 95.0
+    }
+  },
+  "multiclass_metrics": {
+    "accuracy": 0.9626,
+    "precision_weighted": 0.9618,
+    "recall_weighted": 0.9626,
+    "f1_weighted": 0.9619,
+    "roc_auc_ovr": 0.9933,
+    "confusion_matrix": [
+      [
+        7135,
+        0,
+        0,
+        0
+      ],
+      [
+        0,
+        1414,
+        41,
+        0
+      ],
+      [
+        0,
+        99,
+        748,
+        83
+      ],
+      [
+        0,
+        0,
+        151,
+        329
+      ]
+    ]
+  },
+  "binary_metrics": {
+    "accuracy": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "roc_auc": 1.0,
+    "pr_auc": 1.0
+  },
+  "top_features": [
+    {
+      "feature": "emission_above_baseline_pct",
+      "importance": 43.8083
+    },
+    {
+      "feature": "ch4_ppm",
+      "importance": 15.2728
+    },
+    {
+      "feature": "voc_ppm",
+      "importance": 7.4248
+    },
+    {
+      "feature": "co_ppm",
+      "importance": 6.2443
+    },
+    {
+      "feature": "so2_ppm",
+      "importance": 2.5184
+    },
+    {
+      "feature": "equipment_type_Stack",
+      "importance": 1.8868
+    },
+    {
+      "feature": "maintenance_status_ok",
+      "importance": 1.8242
+    },
+    {
+      "feature": "wind_speed_m_s",
+      "importance": 1.4203
+    },
+    {
+      "feature": "nox_ppm",
+      "importance": 1.3642
+    },
+    {
+      "feature": "flow_deviation_pct",
+      "importance": 1.2366
+    }
+  ],
+  "numerical_features": [
+    "temperature_c",
+    "pressure_bar",
+    "flow_rate",
+    "production_rate",
+    "operating_hours",
+    "equipment_age_years",
+    "maintenance_due",
+    "co2_ppm",
+    "co_ppm",
+    "nox_ppm",
+    "so2_ppm",
+    "voc_ppm",
+    "ch4_ppm",
+    "pm25_mg_m3",
+    "ambient_temperature_c",
+    "humidity_pct",
+    "wind_speed_m_s",
+    "pressure_deviation_pct",
+    "flow_deviation_pct",
+    "temperature_deviation_pct",
+    "emission_above_baseline_pct",
+    "rolling_mean",
+    "rolling_std"
+  ],
+  "categorical_features": [
+    "equipment_type",
+    "process_type",
+    "fuel_or_material_type",
+    "shift",
+    "maintenance_status"
+  ],
+  "forbidden_leak_columns": [
+    "incident_label",
+    "risk_class",
+    "risk_score",
+    "leak_location",
+    "leak_severity",
+    "confirmed_by"
+  ]
+}

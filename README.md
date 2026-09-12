@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # ECOLEAK AI — INDUSTRIAL EMISSION INTELLIGENCE
 
 > **HackOut’26 Prototype Submission**  
@@ -97,3 +98,6 @@ npm run build
   - Emerald Green (`#059669`): Sustainability and verified actions
   - Amber (`#D97706`): Warning alerts
   - Crimson Red (`#DC2626`): Critical emission risks
+=======
+# EcoVision
+>>>>>>> a7b2f166a368b27d5f2577785a0fd12ef56e32af
