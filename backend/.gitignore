@@ -40,3 +40,8 @@ logs/
 *.log
 *.tmp
 *.bak
+
+# Windows / OneDrive artifacts
+desktop.ini
+Desktop.ini
+Thumbs.db

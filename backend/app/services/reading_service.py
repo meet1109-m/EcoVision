@@ -4,7 +4,19 @@ from app.models.process_reading import ProcessReading
 from app.schemas.process_reading import ProcessReadingCreate, ProcessReadingFilter
 
 
+from app.services.equipment_service import ensure_equipment_hierarchy
+
+
 def create_reading(db: Session, reading_in: ProcessReadingCreate) -> ProcessReading:
+    ensure_equipment_hierarchy(
+        db=db,
+        plant_id=reading_in.plant_id,
+        process_unit_id=reading_in.process_unit_id,
+        equipment_id=reading_in.equipment_id,
+        equipment_type=reading_in.equipment_type,
+        process_type=reading_in.process_type,
+        equipment_age_years=reading_in.equipment_age_years,
+    )
     reading = ProcessReading(**reading_in.model_dump())
     db.add(reading)
     db.commit()

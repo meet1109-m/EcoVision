@@ -10,9 +10,13 @@ import logging
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
+import warnings
 import joblib
 import numpy as np
 import pandas as pd
+from sklearn.exceptions import InconsistentVersionWarning
+
+warnings.filterwarnings("ignore", category=InconsistentVersionWarning)
 
 logger = logging.getLogger(__name__)
 

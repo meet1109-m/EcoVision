@@ -1,8 +1,72 @@
 from typing import List, Optional
 from sqlalchemy.orm import Session
+from app.models.plant import Plant
+from app.models.process_unit import ProcessUnit
 from app.models.equipment import Equipment
 from app.models.process_reading import ProcessReading
 from app.schemas.equipment import EquipmentCreate, EquipmentUpdate
+
+
+def ensure_equipment_hierarchy(
+    db: Session,
+    plant_id: str,
+    process_unit_id: Optional[str] = None,
+    equipment_id: Optional[str] = None,
+    equipment_type: Optional[str] = None,
+    process_type: Optional[str] = None,
+    equipment_age_years: float = 0.0,
+) -> Optional[Equipment]:
+    """
+    Ensures that the corresponding Plant, ProcessUnit, and Equipment records
+    exist in the database to satisfy relational foreign key constraints.
+    Creates records dynamically if they do not exist.
+    """
+    if not plant_id:
+        plant_id = "PLANT001"
+
+    plant = db.query(Plant).filter(Plant.id == plant_id).first()
+    if not plant:
+        plant = Plant(
+            id=plant_id,
+            name=f"Plant {plant_id}",
+            location="Industrial Facility",
+            industry_type="Petrochemical & Refining",
+            is_active=True,
+        )
+        db.add(plant)
+        db.flush()
+
+    if not process_unit_id:
+        process_unit_id = f"{plant_id}-PU01"
+
+    unit = db.query(ProcessUnit).filter(ProcessUnit.id == process_unit_id).first()
+    if not unit:
+        unit = ProcessUnit(
+            id=process_unit_id,
+            plant_id=plant_id,
+            name=f"Process Unit {process_unit_id}",
+            unit_type="Processing",
+        )
+        db.add(unit)
+        db.flush()
+
+    if equipment_id:
+        eq = db.query(Equipment).filter(Equipment.id == equipment_id).first()
+        if not eq:
+            eq = Equipment(
+                id=equipment_id,
+                process_unit_id=process_unit_id,
+                plant_id=plant_id,
+                equipment_type=equipment_type or "Reactor",
+                process_type=process_type or "General Process",
+                equipment_age_years=float(equipment_age_years or 0.0),
+                maintenance_status="ok",
+            )
+            db.add(eq)
+            db.flush()
+        return eq
+
+    return None
 
 
 def get_equipment_list(

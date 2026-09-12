@@ -55,9 +55,24 @@ def save_simulation_record(
     save_in: SimulationSaveRequest,
     user_id: Optional[int] = None
 ) -> Simulation:
+    plant_id = save_in.plant_id.strip() if save_in.plant_id and save_in.plant_id.strip() else None
+    if plant_id:
+        from app.models.plant import Plant
+        plant = db.query(Plant).filter(Plant.id == plant_id).first()
+        if not plant:
+            plant = Plant(
+                id=plant_id,
+                name=f"Plant {plant_id}",
+                location="Industrial Facility",
+                industry_type="Petrochemical & Refining",
+                is_active=True,
+            )
+            db.add(plant)
+            db.flush()
+
     sim = Simulation(
         user_id=user_id,
-        plant_id=save_in.plant_id,
+        plant_id=plant_id,
         name=save_in.name,
         production_rate=save_in.input.productionRate,
         temperature=save_in.input.temperature,
@@ -80,10 +95,14 @@ def save_simulation_record(
         annual_reduction=save_in.result.annualReduction,
         annual_saving=save_in.result.annualSaving,
     )
-    db.add(sim)
-    db.commit()
-    db.refresh(sim)
-    return sim
+    try:
+        db.add(sim)
+        db.commit()
+        db.refresh(sim)
+        return sim
+    except Exception as e:
+        db.rollback()
+        raise e
 
 
 def get_simulations(db: Session, skip: int = 0, limit: int = 20) -> List[Simulation]:

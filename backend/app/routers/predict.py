@@ -17,6 +17,7 @@ from app.schemas.prediction import (
 from app.ml.feature_pipeline import validate_features_no_leakage, extract_feature_vector
 from app.ml.inference import predictor
 from app.ml.rule_engine import rule_engine
+from app.services.equipment_service import ensure_equipment_hierarchy
 from app.models.prediction import Prediction
 from app.models.process_reading import ProcessReading
 
@@ -52,71 +53,88 @@ def handle_prediction(request: PredictRequest, db: Session) -> PredictResponse:
         for item in ml_output.get("feature_importance", [])
     ]
 
-    # 6. Optional & Default Persistence in PostgreSQL
+    # 6. Optional Persistence in PostgreSQL with Hierarchy Guarantee
     persisted_reading_id = None
-    if request.save_reading:
-        db_reading = ProcessReading(
-            timestamp=request.reading.timestamp,
-            plant_id=request.reading.plant_id,
-            process_unit_id=request.reading.process_unit_id,
-            equipment_id=request.reading.equipment_id,
-            equipment_type=request.reading.equipment_type,
-            process_type=request.reading.process_type,
-            temperature_c=request.reading.temperature_c,
-            pressure_bar=request.reading.pressure_bar,
-            flow_rate=request.reading.flow_rate,
-            production_rate=request.reading.production_rate,
-            operating_hours=request.reading.operating_hours,
-            equipment_age_years=request.reading.equipment_age_years,
-            maintenance_due=request.reading.maintenance_due,
-            co2_ppm=request.reading.co2_ppm,
-            co_ppm=request.reading.co_ppm,
-            nox_ppm=request.reading.nox_ppm,
-            so2_ppm=request.reading.so2_ppm,
-            voc_ppm=request.reading.voc_ppm,
-            ch4_ppm=request.reading.ch4_ppm,
-            pm25_mg_m3=request.reading.pm25_mg_m3,
-            fuel_or_material_type=request.reading.fuel_or_material_type,
-            ambient_temperature_c=request.reading.ambient_temperature_c,
-            humidity_pct=request.reading.humidity_pct,
-            wind_speed_m_s=request.reading.wind_speed_m_s,
-            shift=request.reading.shift,
-            maintenance_status=request.reading.maintenance_status,
-            pressure_deviation_pct=request.reading.pressure_deviation_pct,
-            flow_deviation_pct=request.reading.flow_deviation_pct,
-            temperature_deviation_pct=request.reading.temperature_deviation_pct,
-            emission_above_baseline_pct=request.reading.emission_above_baseline_pct,
-            rolling_mean=request.reading.rolling_mean,
-            rolling_std=request.reading.rolling_std,
-            risk_class=ml_output["predicted_risk_class"],
-            risk_score=ml_output["predicted_risk_score"],
-            leak_severity=ml_output["predicted_leak_severity"],
-            confirmed_by="ml_model",
-        )
-        db.add(db_reading)
-        db.commit()
-        db.refresh(db_reading)
-        persisted_reading_id = db_reading.id
-
     prediction_id = None
-    if request.save_prediction:
-        db_pred = Prediction(
-            reading_id=persisted_reading_id,
-            plant_id=request.reading.plant_id,
-            equipment_id=request.reading.equipment_id,
-            predicted_risk_score=ml_output["predicted_risk_score"],
-            predicted_risk_class=ml_output["predicted_risk_class"],
-            predicted_leak_severity=ml_output["predicted_leak_severity"],
-            predicted_leak_location=f"{request.reading.equipment_type}_sensor",
-            confidence=ml_output["confidence"],
-            rule_signals=rule_output["rule_signals"],
-            feature_importance=[item.model_dump() for item in feature_importance_items],
-            model_version=ml_output["model_version"],
-        )
-        db.add(db_pred)
-        db.commit()
-        db.refresh(db_pred)
-        prediction_id = db_pred.id
+
+    if request.save_reading or request.save_prediction:
+        try:
+            # Ensure referenced plant, process_unit, and equipment exist
+            ensure_equipment_hierarchy(
+                db=db,
+                plant_id=request.reading.plant_id,
+                process_unit_id=request.reading.process_unit_id,
+                equipment_id=request.reading.equipment_id,
+                equipment_type=request.reading.equipment_type,
+                process_type=request.reading.process_type,
+                equipment_age_years=request.reading.equipment_age_years,
+            )
+
+            if request.save_reading:
+                db_reading = ProcessReading(
+                    timestamp=request.reading.timestamp,
+                    plant_id=request.reading.plant_id,
+                    process_unit_id=request.reading.process_unit_id,
+                    equipment_id=request.reading.equipment_id,
+                    equipment_type=request.reading.equipment_type,
+                    process_type=request.reading.process_type,
+                    temperature_c=request.reading.temperature_c,
+                    pressure_bar=request.reading.pressure_bar,
+                    flow_rate=request.reading.flow_rate,
+                    production_rate=request.reading.production_rate,
+                    operating_hours=request.reading.operating_hours,
+                    equipment_age_years=request.reading.equipment_age_years,
+                    maintenance_due=request.reading.maintenance_due,
+                    co2_ppm=request.reading.co2_ppm,
+                    co_ppm=request.reading.co_ppm,
+                    nox_ppm=request.reading.nox_ppm,
+                    so2_ppm=request.reading.so2_ppm,
+                    voc_ppm=request.reading.voc_ppm,
+                    ch4_ppm=request.reading.ch4_ppm,
+                    pm25_mg_m3=request.reading.pm25_mg_m3,
+                    fuel_or_material_type=request.reading.fuel_or_material_type,
+                    ambient_temperature_c=request.reading.ambient_temperature_c,
+                    humidity_pct=request.reading.humidity_pct,
+                    wind_speed_m_s=request.reading.wind_speed_m_s,
+                    shift=request.reading.shift,
+                    maintenance_status=request.reading.maintenance_status,
+                    pressure_deviation_pct=request.reading.pressure_deviation_pct,
+                    flow_deviation_pct=request.reading.flow_deviation_pct,
+                    temperature_deviation_pct=request.reading.temperature_deviation_pct,
+                    emission_above_baseline_pct=request.reading.emission_above_baseline_pct,
+                    rolling_mean=request.reading.rolling_mean,
+                    rolling_std=request.reading.rolling_std,
+                    risk_class=ml_output["predicted_risk_class"],
+                    risk_score=ml_output["predicted_risk_score"],
+                    leak_severity=ml_output["predicted_leak_severity"],
+                    confirmed_by="ml_model",
+                )
+                db.add(db_reading)
+                db.flush()
+                persisted_reading_id = db_reading.id
+
+            if request.save_prediction:
+                db_pred = Prediction(
+                    reading_id=persisted_reading_id,
+                    plant_id=request.reading.plant_id,
+                    equipment_id=request.reading.equipment_id,
+                    predicted_risk_score=ml_output["predicted_risk_score"],
+                    predicted_risk_class=ml_output["predicted_risk_class"],
+                    predicted_leak_severity=ml_output["predicted_leak_severity"],
+                    predicted_leak_location=f"{request.reading.equipment_type}_sensor",
+                    confidence=ml_output["confidence"],
+                    rule_signals=rule_output["rule_signals"],
+                    feature_importance=[item.model_dump() for item in feature_importance_items],
+                    model_version=ml_output["model_version"],
+                )
+                db.add(db_pred)
+                db.flush()
+                prediction_id = db_pred.id
+
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logger.error(f"Failed to persist prediction / reading to database: {e}", exc_info=True)
 
     ml_result_obj = MLPredictionResult(
         predicted_incident_label=ml_output["predicted_incident_label"],

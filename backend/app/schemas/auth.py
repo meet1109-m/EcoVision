@@ -1,10 +1,10 @@
 from typing import Optional
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict
 
 
 class UserBase(BaseModel):
-    email: EmailStr
+    email: str = Field(..., description="Email address or customer ID")
     full_name: Optional[str] = None
     role: str = Field(default="operator", description="Role: admin, engineer, or operator")
     plant_id: Optional[str] = None
@@ -15,7 +15,7 @@ class UserRegister(UserBase):
 
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    email: str = Field(..., description="Email address, username, or Customer ID")
     password: str
 
 

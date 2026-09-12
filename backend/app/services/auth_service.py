@@ -37,8 +37,24 @@ def create_access_token(data: dict, expires_delta: Optional[datetime.timedelta] 
     return encoded_jwt
 
 
-def authenticate_user(db: Session, email: str, password: str) -> Optional[User]:
-    user = db.query(User).filter(User.email == email).first()
+def authenticate_user(db: Session, identifier: str, password: str) -> Optional[User]:
+    identifier_clean = identifier.strip()
+    
+    # 1. Look up by email (case-insensitive)
+    user = db.query(User).filter(User.email.ilike(identifier_clean)).first()
+    
+    # 2. Look up by Customer / Plant ID
+    if not user:
+        user = db.query(User).filter(User.plant_id.ilike(identifier_clean)).first()
+
+    # 3. Look up by Full Name / Username
+    if not user:
+        user = db.query(User).filter(User.full_name.ilike(identifier_clean)).first()
+
+    # 4. Look up by numeric User ID
+    if not user and identifier_clean.isdigit():
+        user = db.query(User).filter(User.id == int(identifier_clean)).first()
+
     if not user:
         return None
     if not verify_password(password, user.hashed_password):
@@ -53,19 +69,42 @@ def register_user(db: Session, user_in: UserRegister) -> User:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="A user with this email already exists."
         )
+
+    plant_id = user_in.plant_id.strip() if user_in.plant_id and user_in.plant_id.strip() else None
+    if plant_id:
+        from app.models.plant import Plant
+        plant = db.query(Plant).filter(Plant.id == plant_id).first()
+        if not plant:
+            plant = Plant(
+                id=plant_id,
+                name=f"Plant {plant_id}",
+                location="Industrial Facility",
+                industry_type="Petrochemical & Refining",
+                is_active=True,
+            )
+            db.add(plant)
+            db.flush()
+
     hashed_pwd = hash_password(user_in.password)
     new_user = User(
         email=user_in.email,
         hashed_password=hashed_pwd,
         full_name=user_in.full_name,
-        role=user_in.role,
-        plant_id=user_in.plant_id,
+        role=user_in.role or "operator",
+        plant_id=plant_id,
         is_active=True,
     )
-    db.add(new_user)
-    db.commit()
-    db.refresh(new_user)
-    return new_user
+    try:
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+        return new_user
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to register user: {str(e)}"
+        )
 
 
 def get_current_user(
