@@ -19,7 +19,7 @@ import { ActionCenterView } from './views/ActionCenterView';
 import { CostSavingsCalculatorView } from './views/CostSavingsCalculatorView';
 
 export const App: React.FC = () => {
-  const { isAuthenticated, activeTab } = useApp();
+  const { isAuthenticated, activeTab, sidebarOpen } = useApp();
 
   // If not signed in, show the Landing / Login experience
   if (!isAuthenticated) {
@@ -64,11 +64,11 @@ export const App: React.FC = () => {
 
       {/* Main UI Layout */}
       <div className="main-content-layer flex min-h-screen">
-        {/* Navigation Sidebar Drawer */}
+        {/* Navigation Sidebar */}
         <Sidebar />
 
-        {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0 w-full transition-all duration-300">
+        {/* Main Content Area - Dynamically offset when sidebar is expanded on desktop */}
+        <div className={`flex-1 flex flex-col min-w-0 w-full transition-all duration-300 ${sidebarOpen ? 'lg:pl-64' : 'lg:pl-0'}`}>
           <Header />
 
           <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-[1600px] mx-auto w-full">
