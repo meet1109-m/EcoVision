@@ -1,0 +1,411 @@
+"""
+EcoVision CSV Seed & Ingestion Pipeline.
+
+Streams, validates, cleans, and inserts industrial_leak_training_v2.csv
+into PostgreSQL using SQLAlchemy batch insertion with duplicate avoidance.
+
+Usage:
+  python scripts/seed_csv.py [--csv-path PATH] [--limit N] [--batch-size B] [--create-tables] [--force]
+"""
+import os
+import sys
+import csv
+import argparse
+import logging
+from datetime import datetime, timezone
+from typing import Dict, Any, Optional
+
+# Ensure backend directory is in sys.path
+sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), "..")))
+
+from app.database import engine, SessionLocal, Base
+from app.models.plant import Plant
+from app.models.process_unit import ProcessUnit
+from app.models.equipment import Equipment
+from app.models.process_reading import ProcessReading
+from app.models.user import User
+from app.models.hotspot import Hotspot
+from app.models.recommendation import Recommendation
+from app.models.action import Action
+from app.services.auth_service import hash_password
+
+logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
+logger = logging.getLogger("seed")
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Seed EcoVision PostgreSQL database from CSV dataset")
+    parser.add_argument(
+        "--csv-path",
+        type=str,
+        default=os.path.join(os.path.dirname(__file__), "..", "..", "industrial_leak_training_v2.csv"),
+        help="Path to industrial_leak_training_v2.csv",
+    )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Limit number of process readings to import (default all rows)",
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=2000,
+        help="Batch size for bulk insertion (default 2000)",
+    )
+    parser.add_argument(
+        "--create-tables",
+        action="store_true",
+        help="Automatically create tables before seeding if not already created",
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force re-import even if records already exist",
+    )
+    return parser.parse_args()
+
+
+def clean_row(row: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Validate and clean a single CSV row, converting types safely."""
+    try:
+        # Timestamp parsing
+        raw_ts = row.get("timestamp", "").strip()
+        try:
+            ts = datetime.strptime(raw_ts, "%Y-%m-%d %H:%M:%S")
+        except ValueError:
+            ts = datetime.fromisoformat(raw_ts)
+
+        # Boolean conversion
+        maint_due_raw = str(row.get("maintenance_due", "false")).strip().lower()
+        maint_due = maint_due_raw in ("true", "1", "t", "yes")
+
+        return {
+            "timestamp": ts,
+            "plant_id": str(row["plant_id"]).strip(),
+            "process_unit_id": str(row["process_unit_id"]).strip(),
+            "equipment_id": str(row["equipment_id"]).strip(),
+            "equipment_type": str(row["equipment_type"]).strip(),
+            "process_type": str(row["process_type"]).strip(),
+            "temperature_c": float(row["temperature_c"]),
+            "pressure_bar": float(row["pressure_bar"]),
+            "flow_rate": float(row["flow_rate"]),
+            "production_rate": float(row["production_rate"]),
+            "operating_hours": float(row["operating_hours"]),
+            "equipment_age_years": float(row["equipment_age_years"]),
+            "maintenance_due": maint_due,
+            "co2_ppm": float(row["co2_ppm"]),
+            "co_ppm": float(row["co_ppm"]),
+            "nox_ppm": float(row["nox_ppm"]),
+            "so2_ppm": float(row["so2_ppm"]),
+            "voc_ppm": float(row["voc_ppm"]),
+            "ch4_ppm": float(row["ch4_ppm"]),
+            "pm25_mg_m3": float(row["pm25_mg_m3"]),
+            "fuel_or_material_type": str(row["fuel_or_material_type"]).strip(),
+            "ambient_temperature_c": float(row["ambient_temperature_c"]),
+            "humidity_pct": float(row["humidity_pct"]),
+            "wind_speed_m_s": float(row["wind_speed_m_s"]),
+            "shift": str(row["shift"]).strip(),
+            "maintenance_status": str(row["maintenance_status"]).strip(),
+            "pressure_deviation_pct": float(row["pressure_deviation_pct"]),
+            "flow_deviation_pct": float(row["flow_deviation_pct"]),
+            "temperature_deviation_pct": float(row["temperature_deviation_pct"]),
+            "emission_above_baseline_pct": float(row["emission_above_baseline_pct"]),
+            "rolling_mean": float(row["rolling_mean"]),
+            "rolling_std": float(row["rolling_std"]),
+            "incident_label": int(float(row.get("incident_label", 0))),
+            "risk_class": str(row.get("risk_class", "normal")).strip(),
+            "risk_score": float(row.get("risk_score", 0.0)),
+            "leak_location": str(row.get("leak_location", "none")).strip(),
+            "leak_severity": str(row.get("leak_severity", "none")).strip(),
+            "confirmed_by": str(row.get("confirmed_by", "sensor")).strip(),
+            "created_at": datetime.now(timezone.utc),
+        }
+    except Exception as err:
+        logger.warning(f"Skipping invalid row: {err}")
+        return None
+
+
+def seed_database(csv_path: str, limit: Optional[int] = None, batch_size: int = 2000, force: bool = False):
+    if not os.path.exists(csv_path):
+        alt_path = os.path.join(os.getcwd(), "industrial_leak_training_v2.csv")
+        if os.path.exists(alt_path):
+            csv_path = alt_path
+        else:
+            raise FileNotFoundError(f"CSV dataset not found at '{csv_path}' or '{alt_path}'")
+
+    logger.info(f"Connecting to database and reading dataset: {csv_path}")
+    db = SessionLocal()
+
+    total_rows = 0
+    successfully_inserted = 0
+    skipped_rows = 0
+    error_count = 0
+
+    try:
+        # 1. System Users Seeding (Idempotent)
+        admin = db.query(User).filter(User.email == "admin@ecovision.io").first()
+        if not admin:
+            admin = User(
+                email="admin@ecovision.io",
+                hashed_password=hash_password("adminpassword123"),
+                full_name="EcoVision Administrator",
+                role="admin",
+                is_active=True,
+            )
+            db.add(admin)
+
+        operator = db.query(User).filter(User.email == "operator@ecovision.io").first()
+        if not operator:
+            operator = User(
+                email="operator@ecovision.io",
+                hashed_password=hash_password("operatorpassword123"),
+                full_name="Plant Lead Operator",
+                role="operator",
+                plant_id="PLANT-A",
+                is_active=True,
+            )
+            db.add(operator)
+        db.commit()
+
+        # 2. Extract and Upsert Plants, Process Units, and Equipment Hierarchy
+        unique_plants = {}
+        unique_units = {}
+        unique_equipment = {}
+
+        with open(csv_path, mode="r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                p_id = row["plant_id"]
+                if p_id not in unique_plants:
+                    unique_plants[p_id] = {
+                        "id": p_id,
+                        "name": f"Industrial Facility {p_id}",
+                        "location": f"Sector-{p_id[-1]}",
+                        "industry_type": "Petrochemical & Refining",
+                        "production_capacity": "500 tonnes/month",
+                    }
+
+                u_id = row["process_unit_id"]
+                if u_id not in unique_units:
+                    unique_units[u_id] = {
+                        "id": u_id,
+                        "plant_id": p_id,
+                        "name": f"Process Unit {u_id}",
+                        "unit_type": row.get("process_type", "Processing"),
+                        "description": f"Automated processing unit {u_id} in {p_id}",
+                    }
+
+                eq_id = row["equipment_id"]
+                if eq_id not in unique_equipment:
+                    unique_equipment[eq_id] = {
+                        "id": eq_id,
+                        "process_unit_id": u_id,
+                        "plant_id": p_id,
+                        "equipment_type": row["equipment_type"],
+                        "process_type": row["process_type"],
+                        "equipment_age_years": float(row["equipment_age_years"]),
+                        "maintenance_status": row["maintenance_status"],
+                    }
+
+        logger.info(f"Hierarchy discovered: {len(unique_plants)} Plants, {len(unique_units)} Process Units, {len(unique_equipment)} Equipment assets.")
+
+        for p_id, p_data in unique_plants.items():
+            if not db.query(Plant).filter(Plant.id == p_id).first():
+                db.add(Plant(**p_data))
+        db.commit()
+
+        for u_id, u_data in unique_units.items():
+            if not db.query(ProcessUnit).filter(ProcessUnit.id == u_id).first():
+                db.add(ProcessUnit(**u_data))
+        db.commit()
+
+        for eq_id, eq_data in unique_equipment.items():
+            if not db.query(Equipment).filter(Equipment.id == eq_id).first():
+                db.add(Equipment(**eq_data))
+        db.commit()
+
+        # 3. Seed Default Hotspots, Recommendations, and Actions
+        first_eq = list(unique_equipment.keys())[0] if unique_equipment else "RX-01-EQ795"
+        second_eq = list(unique_equipment.keys())[1] if len(unique_equipment) > 1 else first_eq
+
+        if db.query(Hotspot).count() == 0:
+            db.add_all([
+                Hotspot(
+                    id="hotspot-01",
+                    plant_id="PLANT-A",
+                    equipment_id=first_eq,
+                    equipment_name="Scrubber",
+                    risk_score=87.0,
+                    status="CRITICAL",
+                    probability=78.0,
+                    emission=142.0,
+                    probable_cause="Abnormal flow/pressure pattern",
+                    detected_signals=["Pressure anomaly", "Flow imbalance", "Elevated emission concentration"],
+                    recommended_action="Inspect outlet seal and optimize operating conditions.",
+                    is_active=True,
+                ),
+                Hotspot(
+                    id="hotspot-02",
+                    plant_id="PLANT-B",
+                    equipment_id=second_eq,
+                    equipment_name="Furnace",
+                    risk_score=73.0,
+                    status="HIGH",
+                    probability=65.0,
+                    emission=118.0,
+                    probable_cause="Temperature inconsistency",
+                    detected_signals=["Temperature deviation", "Flame behavior anomaly"],
+                    recommended_action="Calibrate temperature sensors and inspect burners.",
+                    is_active=True,
+                ),
+            ])
+            db.commit()
+
+        if db.query(Recommendation).count() == 0:
+            db.add_all([
+                Recommendation(
+                    id="rec-01",
+                    plant_id="PLANT-A",
+                    equipment_id=first_eq,
+                    title="Material Optimization",
+                    description="Optimize raw material composition and sourcing",
+                    co2_reduction=32.0,
+                    cost_reduction=18.0,
+                    environmental=84.0,
+                    economic=79.0,
+                    circularity=82.0,
+                    feasibility=91.0,
+                    priority="HIGH",
+                    is_ai_recommended=False,
+                    status="active",
+                ),
+                Recommendation(
+                    id="rec-02",
+                    plant_id="PLANT-B",
+                    equipment_id=second_eq,
+                    title="Recycled Material + Process Optimization",
+                    description="Increase recycled material usage and optimize process conditions",
+                    co2_reduction=45.0,
+                    cost_reduction=10.0,
+                    environmental=95.0,
+                    economic=82.0,
+                    circularity=94.0,
+                    feasibility=76.0,
+                    priority="CRITICAL",
+                    is_ai_recommended=True,
+                    status="active",
+                ),
+            ])
+            db.commit()
+
+        if db.query(Action).count() == 0:
+            db.add_all([
+                Action(
+                    id="action-01",
+                    plant_id="PLANT-A",
+                    equipment_id=first_eq,
+                    recommendation_id="rec-01",
+                    title="Inspect scrubber outlet seal",
+                    priority="CRITICAL",
+                    impact=38.7,
+                    estimated_cost=2500.0,
+                    feasibility=92.0,
+                    status="PENDING",
+                    description="Visual inspection and potential seal replacement",
+                ),
+                Action(
+                    id="action-02",
+                    plant_id="PLANT-A",
+                    equipment_id=first_eq,
+                    recommendation_id="rec-01",
+                    title="Optimize process conditions",
+                    priority="HIGH",
+                    impact=28.5,
+                    estimated_cost=5000.0,
+                    feasibility=76.0,
+                    status="PENDING",
+                    description="Fine-tune temperature, pressure, and flow parameters",
+                ),
+            ])
+            db.commit()
+
+        # 4. Check existing process readings to prevent duplicates
+        existing_reading_count = db.query(ProcessReading).count()
+        if existing_reading_count > 0 and not force:
+            logger.info(f"Database already contains {existing_reading_count} process readings. Skipping duplicate insertion (use --force to re-import).")
+            return {
+                "total_rows": existing_reading_count,
+                "successfully_inserted": 0,
+                "skipped_rows": existing_reading_count,
+                "errors": 0,
+            }
+
+        # 5. Stream and bulk-insert process readings
+        logger.info(f"Streaming process readings into database (batch size: {batch_size}, limit: {limit or 'all'})...")
+        readings_batch = []
+
+        with open(csv_path, mode="r", encoding="utf-8") as f:
+            reader = csv.DictReader(f)
+            for idx, raw_row in enumerate(reader):
+                total_rows += 1
+                if limit and idx >= limit:
+                    break
+
+                cleaned = clean_row(raw_row)
+                if cleaned is None:
+                    skipped_rows += 1
+                    error_count += 1
+                    continue
+
+                readings_batch.append(cleaned)
+
+                if len(readings_batch) >= batch_size:
+                    db.bulk_insert_mappings(ProcessReading, readings_batch)
+                    db.commit()
+                    successfully_inserted += len(readings_batch)
+                    logger.info(f"Batch inserted: {successfully_inserted} rows...")
+                    readings_batch = []
+
+            # Remaining batch
+            if readings_batch:
+                db.bulk_insert_mappings(ProcessReading, readings_batch)
+                db.commit()
+                successfully_inserted += len(readings_batch)
+
+        logger.info("=== SEEDING SUMMARY REPORT ===")
+        logger.info(f"Total rows processed: {total_rows}")
+        logger.info(f"Successfully inserted: {successfully_inserted}")
+        logger.info(f"Skipped / Invalid rows: {skipped_rows}")
+        logger.info(f"Errors encountered: {error_count}")
+
+        return {
+            "total_rows": total_rows,
+            "successfully_inserted": successfully_inserted,
+            "skipped_rows": skipped_rows,
+            "errors": error_count,
+        }
+
+    except Exception as e:
+        db.rollback()
+        logger.error(f"Fatal error during database seeding: {e}")
+        raise
+    finally:
+        db.close()
+
+
+def main():
+    args = parse_args()
+    if args.create_tables:
+        logger.info("Verifying/creating database tables...")
+        Base.metadata.create_all(bind=engine)
+    seed_database(
+        csv_path=args.csv_path,
+        limit=args.limit,
+        batch_size=args.batch_size,
+        force=args.force,
+    )
+
+
+if __name__ == "__main__":
+    main()
