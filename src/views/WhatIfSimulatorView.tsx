@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import { calculateWhatIfDeltas } from '../data/simulationEngine';
 import { 
@@ -18,7 +18,10 @@ import {
   Gauge,
   Cpu,
   Zap,
-  RefreshCw
+  RefreshCw,
+  Layers,
+  Activity,
+  CheckCircle2
 } from 'lucide-react';
 import { 
   ResponsiveContainer, 
@@ -31,7 +34,11 @@ import {
   Legend 
 } from 'recharts';
 
+type MetricViewMode = 'normalized' | 'emissions' | 'scores';
+
 export const WhatIfSimulatorView: React.FC = () => {
+  const [viewMode, setViewMode] = useState<MetricViewMode>('normalized');
+
   const { 
     whatIfScenario, 
     updateWhatIfScenario, 
@@ -52,23 +59,160 @@ export const WhatIfSimulatorView: React.FC = () => {
     whatIfScenario
   );
 
-  const comparisonChartData = [
-    {
-      metric: 'Emissions (kg/d)',
-      'Current Scenario': deltas.baselineEmissions,
-      'Scenario B (Simulated)': deltas.simulatedEmissions
-    },
-    {
-      metric: 'Risk Score (/100)',
-      'Current Scenario': deltas.emissionRiskBefore,
-      'Scenario B (Simulated)': deltas.emissionRiskAfter
-    },
-    {
-      metric: 'Circularity (/100)',
-      'Current Scenario': deltas.circularityBefore,
-      'Scenario B (Simulated)': deltas.circularityAfter
+  const getChartData = () => {
+    if (viewMode === 'emissions') {
+      return [
+        {
+          metric: 'Total Daily CO₂e',
+          'Current Scenario': deltas.baselineEmissions,
+          'Scenario B (Simulated)': deltas.simulatedEmissions,
+          baselineRaw: `${deltas.baselineEmissions.toLocaleString()} kg/d`,
+          simulatedRaw: `${deltas.simulatedEmissions.toLocaleString()} kg/d`,
+          unit: 'kg CO₂e/day',
+          delta: `-${deltas.reductionPercentage}%`
+        },
+        {
+          metric: 'Energy Scope',
+          'Current Scenario': Math.round(deltas.baselineEmissions * 0.45),
+          'Scenario B (Simulated)': Math.round(deltas.simulatedEmissions * (1 - (whatIfScenario.renewableEnergyPercentage / 100) * 0.55)),
+          baselineRaw: `${Math.round(deltas.baselineEmissions * 0.45).toLocaleString()} kg/d`,
+          simulatedRaw: `${Math.round(deltas.simulatedEmissions * (1 - (whatIfScenario.renewableEnergyPercentage / 100) * 0.55)).toLocaleString()} kg/d`,
+          unit: 'kg CO₂e/day',
+          delta: `${Math.round(whatIfScenario.renewableEnergyPercentage * 0.48)}% cut`
+        },
+        {
+          metric: 'Process Scope',
+          'Current Scenario': Math.round(deltas.baselineEmissions * 0.55),
+          'Scenario B (Simulated)': Math.round(deltas.simulatedEmissions * (1 - (whatIfScenario.recycledMaterialPercentage / 100) * 0.40)),
+          baselineRaw: `${Math.round(deltas.baselineEmissions * 0.55).toLocaleString()} kg/d`,
+          simulatedRaw: `${Math.round(deltas.simulatedEmissions * (1 - (whatIfScenario.recycledMaterialPercentage / 100) * 0.40)).toLocaleString()} kg/d`,
+          unit: 'kg CO₂e/day',
+          delta: `${Math.round(whatIfScenario.recycledMaterialPercentage * 0.42)}% cut`
+        }
+      ];
     }
-  ];
+
+    if (viewMode === 'scores') {
+      return [
+        {
+          metric: 'Risk Score (0-100)',
+          'Current Scenario': deltas.emissionRiskBefore,
+          'Scenario B (Simulated)': deltas.emissionRiskAfter,
+          baselineRaw: `${deltas.emissionRiskBefore} / 100`,
+          simulatedRaw: `${deltas.emissionRiskAfter} / 100`,
+          unit: 'Points (0-100)',
+          delta: `${deltas.emissionRiskAfter - deltas.emissionRiskBefore > 0 ? '+' : ''}${deltas.emissionRiskAfter - deltas.emissionRiskBefore} pts`
+        },
+        {
+          metric: 'Circularity (0-100)',
+          'Current Scenario': deltas.circularityBefore,
+          'Scenario B (Simulated)': deltas.circularityAfter,
+          baselineRaw: `${deltas.circularityBefore} / 100`,
+          simulatedRaw: `${deltas.circularityAfter} / 100`,
+          unit: 'Points (0-100)',
+          delta: `+${deltas.circularityAfter - deltas.circularityBefore} pts`
+        },
+        {
+          metric: 'Renewable Share (%)',
+          'Current Scenario': 24,
+          'Scenario B (Simulated)': whatIfScenario.renewableEnergyPercentage,
+          baselineRaw: '24%',
+          simulatedRaw: `${whatIfScenario.renewableEnergyPercentage}%`,
+          unit: 'Percentage',
+          delta: `+${whatIfScenario.renewableEnergyPercentage - 24}%`
+        },
+        {
+          metric: 'Recycled Ratio (%)',
+          'Current Scenario': 18,
+          'Scenario B (Simulated)': whatIfScenario.recycledMaterialPercentage,
+          baselineRaw: '18%',
+          simulatedRaw: `${whatIfScenario.recycledMaterialPercentage}%`,
+          unit: 'Percentage',
+          delta: `+${whatIfScenario.recycledMaterialPercentage - 18}%`
+        }
+      ];
+    }
+
+    // Default: Normalized Comparison (% / 100-base scale so all 3 metrics are clearly visible)
+    const simulatedEmissionsNorm = Math.max(
+      0,
+      Math.round((deltas.simulatedEmissions / (deltas.baselineEmissions || 1)) * 100 * 10) / 10
+    );
+
+    return [
+      {
+        metric: 'Emissions (% Base)',
+        'Current Scenario': 100,
+        'Scenario B (Simulated)': simulatedEmissionsNorm,
+        baselineRaw: `${deltas.baselineEmissions.toLocaleString()} kg/d (100%)`,
+        simulatedRaw: `${deltas.simulatedEmissions.toLocaleString()} kg/d (${simulatedEmissionsNorm}%)`,
+        unit: '% of Baseline (100%)',
+        delta: `-${deltas.reductionPercentage}% reduction`
+      },
+      {
+        metric: 'Risk Score (/100)',
+        'Current Scenario': deltas.emissionRiskBefore,
+        'Scenario B (Simulated)': deltas.emissionRiskAfter,
+        baselineRaw: `${deltas.emissionRiskBefore} / 100`,
+        simulatedRaw: `${deltas.emissionRiskAfter} / 100`,
+        unit: 'Score (0-100)',
+        delta: `${deltas.emissionRiskAfter - deltas.emissionRiskBefore > 0 ? '+' : ''}${deltas.emissionRiskAfter - deltas.emissionRiskBefore} pts lower`
+      },
+      {
+        metric: 'Circularity (/100)',
+        'Current Scenario': deltas.circularityBefore,
+        'Scenario B (Simulated)': deltas.circularityAfter,
+        baselineRaw: `${deltas.circularityBefore} / 100`,
+        simulatedRaw: `${deltas.circularityAfter} / 100`,
+        unit: 'Score (0-100)',
+        delta: `+${deltas.circularityAfter - deltas.circularityBefore} pts gain`
+      }
+    ];
+  };
+
+  const chartData = getChartData();
+
+  const CustomChartTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      const data = payload[0].payload;
+      return (
+        <div className="acrylic-card p-3 rounded-xl border border-slate-200 shadow-xl text-xs space-y-1.5 z-50 min-w-[210px]">
+          <div className="font-extrabold text-slate-900 border-b border-slate-100 pb-1 flex items-center justify-between gap-2">
+            <span>{label}</span>
+            {data.delta && (
+              <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+                {data.delta}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center justify-between gap-4 text-slate-600">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-sm bg-slate-400 inline-block" />
+              <span>Current Baseline:</span>
+            </span>
+            <span className="font-mono font-bold text-slate-800">
+              {data.baselineRaw || `${payload[0]?.value} ${data.unit || ''}`}
+            </span>
+          </div>
+          <div className="flex items-center justify-between gap-4 text-slate-600">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-sm bg-sky-600 inline-block" />
+              <span>Scenario B (Sim):</span>
+            </span>
+            <span className="font-mono font-bold text-sky-700">
+              {data.simulatedRaw || `${payload[1]?.value} ${data.unit || ''}`}
+            </span>
+          </div>
+          {data.unit && (
+            <div className="text-[10px] text-slate-400 pt-1 border-t border-slate-100 font-mono">
+              Scale: {data.unit}
+            </div>
+          )}
+        </div>
+      );
+    }
+    return null;
+  };
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
@@ -330,29 +474,76 @@ export const WhatIfSimulatorView: React.FC = () => {
         </div>
 
         {/* Side-by-Side Scenario Chart (5 cols) */}
-        <div className="lg:col-span-5 acrylic-card rounded-2xl p-6 border border-white/80 shadow-sm flex flex-col justify-between">
+        <div className="lg:col-span-5 acrylic-card rounded-2xl p-6 border border-white/80 shadow-sm flex flex-col justify-between space-y-4">
           <div>
-            <div className="flex items-center justify-between pb-3 border-b border-slate-200">
-              <h3 className="font-bold text-sm text-slate-900">
-                Scenario Comparison
-              </h3>
-              <span className="text-[10px] text-slate-500 font-mono">Current vs Simulated</span>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-slate-200 gap-2">
+              <div>
+                <h3 className="font-bold text-sm text-slate-900">
+                  Scenario Comparison
+                </h3>
+                <span className="text-[10px] text-slate-500 font-mono">Current Baseline vs Simulated Outcome</span>
+              </div>
+
+              {/* View Mode Toggle */}
+              <div className="inline-flex p-0.5 rounded-lg bg-slate-100 border border-slate-200 text-[10px] font-bold">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('normalized')}
+                  className={`px-2 py-1 rounded-md transition-all ${
+                    viewMode === 'normalized'
+                      ? 'bg-white text-sky-700 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="Show all metrics normalized on a 0-100% scale so all bars are clearly visible"
+                >
+                  All (Normalized)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('emissions')}
+                  className={`px-2 py-1 rounded-md transition-all ${
+                    viewMode === 'emissions'
+                      ? 'bg-white text-sky-700 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="View absolute daily emissions in kg CO2e"
+                >
+                  Emissions (kg/d)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('scores')}
+                  className={`px-2 py-1 rounded-md transition-all ${
+                    viewMode === 'scores'
+                      ? 'bg-white text-sky-700 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                  title="View Risk & Circularity scores on 0-100 index"
+                >
+                  Scores (0-100)
+                </button>
+              </div>
             </div>
 
             <p className="text-xs text-slate-500 mt-2">
-              Visualizing baseline metrics vs. simulated intervention outcomes.
+              {viewMode === 'normalized' 
+                ? 'All metrics normalized to a 100-base scale to compare relative reductions & gains side-by-side.'
+                : viewMode === 'emissions'
+                ? 'Absolute emissions breakdown across operational scopes in kg CO₂e/day.'
+                : 'Direct comparison of process risk and material circularity indices.'}
             </p>
 
-            <div className="h-64 w-full mt-4">
+            <div className="h-60 w-full mt-3">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={comparisonChartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                <BarChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
                   <XAxis dataKey="metric" tick={{ fontSize: 10, fill: '#64748B' }} />
-                  <YAxis tick={{ fontSize: 10, fill: '#64748B' }} />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#FFFFFF', borderColor: '#E2E8F0', borderRadius: '0.75rem', fontSize: '11px', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}
+                  <YAxis 
+                    tick={{ fontSize: 10, fill: '#64748B' }} 
+                    domain={viewMode === 'emissions' ? ['auto', 'auto'] : [0, 100]}
                   />
-                  <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }} />
+                  <Tooltip content={<CustomChartTooltip />} />
+                  <Legend wrapperStyle={{ fontSize: '11px', paddingTop: '8px' }} />
                   <Bar dataKey="Current Scenario" fill="#94A3B8" radius={[4, 4, 0, 0]} />
                   <Bar dataKey="Scenario B (Simulated)" fill="#0284C7" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -360,7 +551,67 @@ export const WhatIfSimulatorView: React.FC = () => {
             </div>
           </div>
 
-          <div className="mt-4 p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-500">
+          {/* Metric Breakdown Cards */}
+          <div className="space-y-2 pt-2 border-t border-slate-200/80">
+            {/* Emissions Row */}
+            <div className="p-2.5 rounded-xl bg-slate-50/90 border border-slate-200/80 flex items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                <span className="font-semibold text-slate-700">Daily Emissions:</span>
+              </div>
+              <div className="flex items-center gap-2 font-mono">
+                <span className="line-through text-slate-400 text-[11px]">
+                  {deltas.baselineEmissions.toLocaleString()} kg
+                </span>
+                <span className="font-extrabold text-emerald-700">
+                  {deltas.simulatedEmissions.toLocaleString()} kg
+                </span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                  ↓ {deltas.reductionPercentage}%
+                </span>
+              </div>
+            </div>
+
+            {/* Risk Row */}
+            <div className="p-2.5 rounded-xl bg-slate-50/90 border border-slate-200/80 flex items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-sky-500" />
+                <span className="font-semibold text-slate-700">Emission Risk:</span>
+              </div>
+              <div className="flex items-center gap-2 font-mono">
+                <span className="line-through text-slate-400 text-[11px]">
+                  {deltas.emissionRiskBefore}/100
+                </span>
+                <span className="font-extrabold text-sky-700">
+                  {deltas.emissionRiskAfter}/100
+                </span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-800">
+                  ↓ {deltas.emissionRiskBefore - deltas.emissionRiskAfter} pts
+                </span>
+              </div>
+            </div>
+
+            {/* Circularity Row */}
+            <div className="p-2.5 rounded-xl bg-slate-50/90 border border-slate-200/80 flex items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-cyan-500" />
+                <span className="font-semibold text-slate-700">Circularity Index:</span>
+              </div>
+              <div className="flex items-center gap-2 font-mono">
+                <span className="line-through text-slate-400 text-[11px]">
+                  {deltas.circularityBefore}/100
+                </span>
+                <span className="font-extrabold text-cyan-700">
+                  {deltas.circularityAfter}/100
+                </span>
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-cyan-100 text-cyan-800">
+                  +{deltas.circularityAfter - deltas.circularityBefore} pts
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-500">
             <span className="font-semibold text-slate-700">Simulation Status:</span> All displayed numbers are illustrative simulation parameters designed for industrial decision support.
           </div>
         </div>
