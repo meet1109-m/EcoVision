@@ -32,7 +32,7 @@ export interface ProcessReadingItem {
 }
 
 export const LiveReadingsPanel: React.FC = () => {
-  const { simulationResult } = useApp();
+  const { simulationResult, factoryProfile } = useApp();
 
   const [readings, setReadings] = useState<ProcessReadingItem[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -45,7 +45,7 @@ export const LiveReadingsPanel: React.FC = () => {
       {
         id: 'sim-01',
         timestamp: new Date(now.getTime() - 1000 * 30).toISOString(),
-        plant_id: 'PLANT-A',
+        plant_id: factoryProfile?.id || 'PLANT-A',
         process_unit_id: 'UNIT-01',
         equipment_id: 'EQ-001 (Scrubber)',
         equipment_type: 'Scrubber',
@@ -60,7 +60,7 @@ export const LiveReadingsPanel: React.FC = () => {
       {
         id: 'sim-02',
         timestamp: new Date(now.getTime() - 1000 * 90).toISOString(),
-        plant_id: 'PLANT-A',
+        plant_id: factoryProfile?.id || 'PLANT-A',
         process_unit_id: 'UNIT-01',
         equipment_id: 'EQ-002 (Furnace)',
         equipment_type: 'Furnace',
@@ -75,7 +75,7 @@ export const LiveReadingsPanel: React.FC = () => {
       {
         id: 'sim-03',
         timestamp: new Date(now.getTime() - 1000 * 180).toISOString(),
-        plant_id: 'PLANT-A',
+        plant_id: factoryProfile?.id || 'PLANT-A',
         process_unit_id: 'UNIT-02',
         equipment_id: 'EQ-003 (Distillation Column)',
         equipment_type: 'Distillation Column',
@@ -90,7 +90,7 @@ export const LiveReadingsPanel: React.FC = () => {
       {
         id: 'sim-04',
         timestamp: new Date(now.getTime() - 1000 * 240).toISOString(),
-        plant_id: 'PLANT-A',
+        plant_id: factoryProfile?.id || 'PLANT-A',
         process_unit_id: 'UNIT-02',
         equipment_id: 'EQ-004 (Heat Exchanger)',
         equipment_type: 'Heat Exchanger',
@@ -108,7 +108,8 @@ export const LiveReadingsPanel: React.FC = () => {
   const loadReadings = async () => {
     setIsLoading(true);
     try {
-      const res = await fetchBackendReadings('PLANT-A', 8);
+      const plantId = factoryProfile?.id || 'PLANT-A';
+      const res = await fetchBackendReadings(plantId, 8);
       if (res && res.items && Array.isArray(res.items) && res.items.length > 0) {
         setReadings(res.items);
         setIsBackendLive(true);
@@ -137,7 +138,7 @@ export const LiveReadingsPanel: React.FC = () => {
     return () => {
       clearInterval(intervalId);
     };
-  }, []);
+  }, [factoryProfile?.id]);
 
   const getRiskBadge = (riskClass?: string) => {
     const norm = (riskClass || '').toUpperCase();

@@ -35,7 +35,18 @@ def query_readings(
     query = db.query(ProcessReading)
 
     if filter_params.plant_id:
-        query = query.filter(ProcessReading.plant_id == filter_params.plant_id)
+        alias_map = {
+            "PLANT-A": ["PLANT-A", "PLANT-01", "DEMO001"],
+            "DEMO001": ["DEMO001", "PLANT-A", "PLANT-01"],
+            "PLANT-B": ["PLANT-B", "PLANT-02", "DEMO002"],
+            "DEMO002": ["DEMO002", "PLANT-B", "DEMO002"],
+            "PLANT-01": ["PLANT-01", "PLANT-A", "DEMO001"],
+            "PLANT-02": ["PLANT-02", "PLANT-B", "DEMO002"],
+        }
+        candidates = alias_map.get(filter_params.plant_id, [filter_params.plant_id])
+        has_match = db.query(ProcessReading.id).filter(ProcessReading.plant_id.in_(candidates)).first() is not None
+        if has_match:
+            query = query.filter(ProcessReading.plant_id.in_(candidates))
     if filter_params.process_unit_id:
         query = query.filter(ProcessReading.process_unit_id == filter_params.process_unit_id)
     if filter_params.equipment_id:

@@ -46,7 +46,7 @@ class Settings(BaseSettings):
     CSV_DATASET_PATH: str = "industrial_leak_training_v2.csv"
     
     model_config = SettingsConfigDict(
-        env_file=".env",
+        env_file=os.path.join(os.path.dirname(__file__), "..", ".env"),
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore"

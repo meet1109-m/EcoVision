@@ -66,15 +66,36 @@ def parse_args():
     return parser.parse_args()
 
 
+def safe_float(val: Any, default: float = 0.0) -> float:
+    try:
+        if val is None or str(val).strip() == "":
+            return default
+        return float(val)
+    except (ValueError, TypeError):
+        return default
+
+
+def safe_int(val: Any, default: int = 0) -> int:
+    try:
+        if val is None or str(val).strip() == "":
+            return default
+        return int(float(val))
+    except (ValueError, TypeError):
+        return default
+
+
 def clean_row(row: Dict[str, Any]) -> Optional[Dict[str, Any]]:
     """Validate and clean a single CSV row, converting types safely."""
     try:
         # Timestamp parsing
-        raw_ts = row.get("timestamp", "").strip()
+        raw_ts = str(row.get("timestamp", "")).strip()
         try:
             ts = datetime.strptime(raw_ts, "%Y-%m-%d %H:%M:%S")
         except ValueError:
-            ts = datetime.fromisoformat(raw_ts)
+            try:
+                ts = datetime.fromisoformat(raw_ts)
+            except Exception:
+                ts = datetime.now(timezone.utc)
 
         # Boolean conversion
         maint_due_raw = str(row.get("maintenance_due", "false")).strip().lower()
@@ -82,40 +103,40 @@ def clean_row(row: Dict[str, Any]) -> Optional[Dict[str, Any]]:
 
         return {
             "timestamp": ts,
-            "plant_id": str(row["plant_id"]).strip(),
-            "process_unit_id": str(row["process_unit_id"]).strip(),
-            "equipment_id": str(row["equipment_id"]).strip(),
-            "equipment_type": str(row["equipment_type"]).strip(),
-            "process_type": str(row["process_type"]).strip(),
-            "temperature_c": float(row["temperature_c"]),
-            "pressure_bar": float(row["pressure_bar"]),
-            "flow_rate": float(row["flow_rate"]),
-            "production_rate": float(row["production_rate"]),
-            "operating_hours": float(row["operating_hours"]),
-            "equipment_age_years": float(row["equipment_age_years"]),
+            "plant_id": str(row.get("plant_id", "PLANT-A")).strip(),
+            "process_unit_id": str(row.get("process_unit_id", "UNIT-01")).strip(),
+            "equipment_id": str(row.get("equipment_id", "EQ-001")).strip(),
+            "equipment_type": str(row.get("equipment_type", "Scrubber")).strip(),
+            "process_type": str(row.get("process_type", "Chemical")).strip(),
+            "temperature_c": safe_float(row.get("temperature_c"), 150.0),
+            "pressure_bar": safe_float(row.get("pressure_bar"), 10.0),
+            "flow_rate": safe_float(row.get("flow_rate"), 100.0),
+            "production_rate": safe_float(row.get("production_rate"), 50.0),
+            "operating_hours": safe_float(row.get("operating_hours"), 1000.0),
+            "equipment_age_years": safe_float(row.get("equipment_age_years"), 5.0),
             "maintenance_due": maint_due,
-            "co2_ppm": float(row["co2_ppm"]),
-            "co_ppm": float(row["co_ppm"]),
-            "nox_ppm": float(row["nox_ppm"]),
-            "so2_ppm": float(row["so2_ppm"]),
-            "voc_ppm": float(row["voc_ppm"]),
-            "ch4_ppm": float(row["ch4_ppm"]),
-            "pm25_mg_m3": float(row["pm25_mg_m3"]),
-            "fuel_or_material_type": str(row["fuel_or_material_type"]).strip(),
-            "ambient_temperature_c": float(row["ambient_temperature_c"]),
-            "humidity_pct": float(row["humidity_pct"]),
-            "wind_speed_m_s": float(row["wind_speed_m_s"]),
-            "shift": str(row["shift"]).strip(),
-            "maintenance_status": str(row["maintenance_status"]).strip(),
-            "pressure_deviation_pct": float(row["pressure_deviation_pct"]),
-            "flow_deviation_pct": float(row["flow_deviation_pct"]),
-            "temperature_deviation_pct": float(row["temperature_deviation_pct"]),
-            "emission_above_baseline_pct": float(row["emission_above_baseline_pct"]),
-            "rolling_mean": float(row["rolling_mean"]),
-            "rolling_std": float(row["rolling_std"]),
-            "incident_label": int(float(row.get("incident_label", 0))),
+            "co2_ppm": safe_float(row.get("co2_ppm"), 400.0),
+            "co_ppm": safe_float(row.get("co_ppm"), 5.0),
+            "nox_ppm": safe_float(row.get("nox_ppm"), 30.0),
+            "so2_ppm": safe_float(row.get("so2_ppm"), 20.0),
+            "voc_ppm": safe_float(row.get("voc_ppm"), 10.0),
+            "ch4_ppm": safe_float(row.get("ch4_ppm"), 10.0),
+            "pm25_mg_m3": safe_float(row.get("pm25_mg_m3"), 15.0),
+            "fuel_or_material_type": str(row.get("fuel_or_material_type", "NaturalGas")).strip(),
+            "ambient_temperature_c": safe_float(row.get("ambient_temperature_c"), 25.0),
+            "humidity_pct": safe_float(row.get("humidity_pct"), 50.0),
+            "wind_speed_m_s": safe_float(row.get("wind_speed_m_s"), 3.0),
+            "shift": str(row.get("shift", "Day")).strip(),
+            "maintenance_status": str(row.get("maintenance_status", "Normal")).strip(),
+            "pressure_deviation_pct": safe_float(row.get("pressure_deviation_pct"), 0.0),
+            "flow_deviation_pct": safe_float(row.get("flow_deviation_pct"), 0.0),
+            "temperature_deviation_pct": safe_float(row.get("temperature_deviation_pct"), 0.0),
+            "emission_above_baseline_pct": safe_float(row.get("emission_above_baseline_pct"), 0.0),
+            "rolling_mean": safe_float(row.get("rolling_mean"), 100.0),
+            "rolling_std": safe_float(row.get("rolling_std"), 0.0),
+            "incident_label": safe_int(row.get("incident_label"), 0),
             "risk_class": str(row.get("risk_class", "normal")).strip(),
-            "risk_score": float(row.get("risk_score", 0.0)),
+            "risk_score": safe_float(row.get("risk_score"), 0.0),
             "leak_location": str(row.get("leak_location", "none")).strip(),
             "leak_severity": str(row.get("leak_severity", "none")).strip(),
             "confirmed_by": str(row.get("confirmed_by", "sensor")).strip(),
@@ -126,14 +147,22 @@ def clean_row(row: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         return None
 
 
-def seed_database(csv_path: str, limit: Optional[int] = None, batch_size: int = 2000, force: bool = False):
-    if not os.path.exists(csv_path):
-        alt_path = os.path.join(os.getcwd(), "industrial_leak_training_v2.csv")
-        if os.path.exists(alt_path):
-            csv_path = alt_path
-        else:
-            raise FileNotFoundError(f"CSV dataset not found at '{csv_path}' or '{alt_path}'")
+def resolve_csv_path(user_path: Optional[str]) -> str:
+    candidates = [
+        user_path,
+        os.path.join(os.path.dirname(__file__), "..", "..", "model_data", "industrial_leak_training_50k.csv"),
+        os.path.join(os.getcwd(), "model_data", "industrial_leak_training_50k.csv"),
+        os.path.join(os.path.dirname(__file__), "..", "..", "industrial_leak_training_v2.csv"),
+        os.path.join(os.getcwd(), "industrial_leak_training_v2.csv"),
+    ]
+    for c in candidates:
+        if c and os.path.exists(c):
+            return os.path.realpath(c)
+    raise FileNotFoundError(f"Could not locate training dataset CSV in candidates: {candidates}")
 
+
+def seed_database(csv_path: str, limit: Optional[int] = None, batch_size: int = 2000, force: bool = False):
+    csv_path = resolve_csv_path(csv_path)
     logger.info(f"Connecting to database and reading dataset: {csv_path}")
     db = SessionLocal()
 
@@ -203,10 +232,21 @@ def seed_database(csv_path: str, limit: Optional[int] = None, batch_size: int = 
                         "process_unit_id": u_id,
                         "plant_id": p_id,
                         "equipment_type": row["equipment_type"],
-                        "process_type": row["process_type"],
-                        "equipment_age_years": float(row["equipment_age_years"]),
-                        "maintenance_status": row["maintenance_status"],
+                        "process_type": str(row.get("process_type", "Processing")).strip(),
+                        "equipment_age_years": safe_float(row.get("equipment_age_years"), 5.0),
+                        "maintenance_status": str(row.get("maintenance_status", "Normal")).strip(),
                     }
+
+        # Ensure demo plants exist
+        demo_plants = {
+            "PLANT-A": {"id": "PLANT-A", "name": "GreenTech Chemicals Plant Alpha", "location": "Bhiwadi Industrial Zone, Rajasthan", "industry_type": "Chemicals", "production_capacity": "120 tonnes/day"},
+            "PLANT-B": {"id": "PLANT-B", "name": "FutureChem Industries - Unit 4", "location": "Dahej Petrochemical Corridor, Gujarat", "industry_type": "Chemicals", "production_capacity": "250 tonnes/day"},
+            "DEMO001": {"id": "DEMO001", "name": "GreenTech Chemicals Plant Alpha", "location": "Bhiwadi Industrial Zone, Rajasthan", "industry_type": "Chemicals", "production_capacity": "120 tonnes/day"},
+            "DEMO002": {"id": "DEMO002", "name": "FutureChem Industries - Unit 4", "location": "Dahej Petrochemical Corridor, Gujarat", "industry_type": "Chemicals", "production_capacity": "250 tonnes/day"},
+        }
+        for dp_id, dp_data in demo_plants.items():
+            if dp_id not in unique_plants:
+                unique_plants[dp_id] = dp_data
 
         logger.info(f"Hierarchy discovered: {len(unique_plants)} Plants, {len(unique_units)} Process Units, {len(unique_equipment)} Equipment assets.")
 
